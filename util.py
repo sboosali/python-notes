@@ -14,6 +14,11 @@ def flatten(l):
     if l==[]: return []
     return functools.reduce(lambda xs,ys: xs+ys, map(flatten, l))
 
+def print_heads(notes):
+    for note in notes:
+        print()
+        print(note.head)
+
 def print_first_token_frequencies(notes):
 	counts = defaultdict(int)
 	for note in notes:

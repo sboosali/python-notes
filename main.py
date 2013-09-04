@@ -4,42 +4,35 @@ import glob
 import os
 import argparse
 from util import *
-from notes import *
+from notes import Note, notify, div, sep
 
 
 def get_args():
     args = argparse.ArgumentParser()
-    args.add_argument('--head', action='store_true')
-    args.add_argument('--parse', action='store_true')
-    args.add_argument('--write', action='store_true')
-    args.add_argument('--freqs', action='store_true')
+    args.add_argument('--head', action='store_true',
+                      help='show all heads')
+    args.add_argument('--parse', action='store_true',
+                      help='parse all heads')
+    args.add_argument('--write', action='store_true',
+                      help='write to database')
+    args.add_argument('--freqs', action='store_true',
+                      help='show operator frequencies')
+    args.add_argument('files', nargs='*',
+                      help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
     return args
 
-def debug_on_error(f):
-    def debugged_on_error(*args,**kwargs):
-        try:
-            return f(*args,**kwargs)
-        except Exception as e:
-            print();print();print();
-            import traceback
-            import sys
-            traceback.print_exception(*sys.exc_info())
-            print();print();print();
-            import pdb;pdb.set_trace()
-            raise
-
-    debugged_on_error.__name__ = 'debug_on_error(%s)' % f.__name__
-    #import pdb; pdb.set_trace()
-    return debugged_on_error
-
-#@debug_on_error
-def main():
-    args = get_args()
-
+def get_dropbox_notes():
     files = '~/Dropbox/*.note'
     files = glob.glob(os.path.expanduser(files))
     files += [os.path.expanduser('~/Dropbox/.note')]
+    return files
+
+def main():
+    args = get_args()
+
+    files = args.files if args.files else get_dropbox_notes()
+
     files = [open(file).read() for file in files]
     chars = '\n\n'.join(files)
     lines = chars.split('\n')
@@ -53,15 +46,7 @@ def main():
     notes = Note.notes.values()
 
     if args.head:
-        for note in notes:
-            print()
-            print(note.head)
-
-    if args.parse:
-        for note in notes:
-            print()
-            print(note.head)
-            print(parse_head(note.head))
+        print_heads(notes)
 
     if args.freqs:
         print_first_token_frequencies(notes)
