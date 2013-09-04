@@ -5,6 +5,7 @@ import os
 import argparse
 from util import *
 from notes import Note, notify, div, sep
+from parsing import parse_head
 
 
 def get_args():
@@ -13,10 +14,10 @@ def get_args():
                       help='show all heads')
     args.add_argument('--parse', action='store_true',
                       help='parse all heads')
-    args.add_argument('--write', action='store_true',
-                      help='write to database')
     args.add_argument('--freqs', action='store_true',
                       help='show operator frequencies')
+    args.add_argument('--write', action='store_true',
+                      help='write to database')
     args.add_argument('files', nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
@@ -50,6 +51,12 @@ def main():
 
     if args.freqs:
         print_first_token_frequencies(notes)
+
+    if args.parse:
+        for note in notes:
+            print()
+            print(note.head)
+            print(parse_head(note.head))
 
 if __name__=='__main__':
     main()
