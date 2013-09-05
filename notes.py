@@ -37,22 +37,34 @@ def is_verb_phrase(line):
 class Note:
     """
     """
+    notes = {} # the registry
 
-    notes = {} # registry
-    def __new__(cls, head='', body=()):
+    @typecheck
+    def __new__(cls, head: str, body: list):
         """
         : singleton factory
+
+        : idempotent
+        i.e.
+        >>> data = {'head': 'head', 'body': ['body']}
+        >>> assert Note(**data) == Note(**data)
+        and Note must the same internally
         """
+
         if head in cls.notes:
             note = cls.notes[head]
-            note.body += body
+            note.body = merge(note.body, body)
         else:
             note = super().__new__(cls)
             note.head = head
             note.body = body
             cls.notes[head] = note
+
         return note
 
+    def __iter__(self):
+        yield 'head', self.head
+        yield 'body', self.body
     def __bool__(self):
         return bool(self.head.strip())
     def __str__(self):
@@ -62,6 +74,11 @@ class Note:
     def __cmp__(x, y):
         return cmp(x.head, y.head)
 
+    def print(self):
+        print()
+        print('head:', self.head)
+        print('body:', self.body)
+
     @property
     def lines(self):
         return [self.head] + self.body
@@ -70,15 +87,17 @@ class Note:
         return self.head
 
 def notify(lines):
-    """ Takes a paragraph of text to a Note
+    """makes a paragraph of text into a Note
     parses head
     parses each line in body
     """
+    if not lines: return
+
     head = lines[0].strip()
     body = lines[1:] if len(lines)>1 else []
 
     if not head: return
-    if is_div(head): return
+    if is_div(head): notify(body)
 
     note = Note(head=head, body=body)
     return note
