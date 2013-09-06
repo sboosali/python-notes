@@ -5,7 +5,7 @@ import os
 import argparse
 import db
 from util import *
-from notes import Note, notify, div, sep
+from notes import notify, get_notes
 from parsing import parse_head
 
 
@@ -49,17 +49,14 @@ def main():
         args.write = True
 
     files = args.files if args.files else get_dropbox_notes()
-
     files = [open(file).read() for file in files]
     chars = '\n\n'.join(files)
-    lines = chars.split('\n')
-    sects = chars.split(div)
-
-    blocks = chars.split(sep)
+    blocks = chars.split('\n\n')
     blocks = [block.split('\n') for block in blocks]
+
     for lines in blocks:
         notify(lines)
-    notes = list(Note.notes.values())
+    notes = get_notes()
 
     if args.head:
         h1('HEAD')

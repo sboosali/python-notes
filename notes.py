@@ -105,3 +105,6 @@ def notify(lines):
 def get_aliases(line):
     aliases = line.split(', ')
     return aliases if len(aliases)>1 else None
+
+def get_notes():
+    return list(Note.notes.values())

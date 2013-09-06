@@ -24,7 +24,7 @@ x
 import itertools
 import re
 from util import *
-from grammar import *
+from grammar import PRECS
 
 
 def whiten(s, n):
@@ -84,7 +84,7 @@ def parse(is_op, ops, line):
     tree = re.split(regex, line)
     return tree if len(tree)>1 else line
 
-def parse_head(line, v=False):
+def parse_head(line: str, v=False) -> list:
     """
     `v` = verbose option to print each step
 
@@ -118,13 +118,6 @@ def parse_head(line, v=False):
 
     return tree
 
-def test_parse(line, **kwargs):
-    print()
-    tree = parse_head(line, **kwargs)
-    print()
-    print(tree)
-
-if __name__=='__main__':
-    test_parse('5   /   1 * 2  +  3 * 4')
-    test_parse('x -> y -> z')
-    test_parse('x < y where z')
+def unparse(tree: list) -> str:
+    line = ''.join(flatten(tree))
+    return line
