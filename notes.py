@@ -42,7 +42,7 @@ class Note:
     notes = {} # the registry
 
     @typecheck
-    def __new__(cls, head: str, body: list):
+    def __new__(cls, head: str, body: list, file:str = ''):
         """
         : singleton factory
 
@@ -63,11 +63,13 @@ class Note:
             note.body = body
             cls.notes[head] = note
 
+        note.file = file
         return note
 
     def __iter__(self):
         yield 'head', self.head
         yield 'body', self.body
+        yield 'file', self.file
     def __bool__(self):
         return bool(self.head.strip())
     def __str__(self):
@@ -80,6 +82,7 @@ class Note:
     def print(self):
         print()
         print('[head]', self.head)
+        print('[file]', self.file)
         for line in self.body:
             print('[body]', line)
 
@@ -90,7 +93,7 @@ class Note:
     def index(self):
         return self.head
 
-def notify(lines):
+def notify(file, lines):
     """TODO parses text => creates Note => updates DB
     """
     if not lines: return
@@ -99,9 +102,9 @@ def notify(lines):
     body = lines[1:] if len(lines)>1 else []
 
     if not head: return
-    if is_div(head): notify(body)
+    if is_div(head): notify(file, body)
 
-    note = Note(head=head, body=body)
+    note = Note(head=head, body=body, file=file)
     return note
 
 def get_notes():

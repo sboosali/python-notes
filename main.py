@@ -25,6 +25,8 @@ def get_args():
                       help='return the body of the head given')
     args.add_argument('--aliases', action='store_true',
                       help='shows all aliases')
+    args.add_argument('--destroy', action='store_true',
+                      help='destroy all documents in "notes" collection')
     args.add_argument('files', nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
@@ -39,7 +41,7 @@ def get_dropbox_notes():
 def write_notes_to_database(notes):
     for note in notes:
         note.print()
-        db.upsert(dict(note))
+        db.upsert(**dict(note))
 
 def main():
     args = get_args()
@@ -55,14 +57,19 @@ def main():
         args.get = 'leonard cohen'
 
     files = args.files if args.files else get_dropbox_notes()
-    files = [open(file).read() for file in files]
-    chars = '\n\n'.join(files)
-    blocks = chars.split('\n\n')
-    blocks = [block.split('\n') for block in blocks]
 
-    for lines in blocks:
-        N.notify(lines)
+    for file in files:
+        chars = open(file).read()
+        blocks = chars.split('\n\n')
+        blocks = [block.split('\n') for block in blocks]
+        for lines in blocks:
+            N.notify(file, lines)
+
     notes = N.get_notes()
+
+    if args.destroy:
+        h1('DESTROY')
+        print(db.remove_collection())
 
     if args.head:
         h1('HEAD')
@@ -96,6 +103,7 @@ def main():
                 print()
                 print(note.head)
                 print(aliases)
+
 
 if __name__=='__main__':
     main()

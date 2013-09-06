@@ -19,13 +19,15 @@ def get(head: str) -> dict:
     return note if note else {'head':head, 'body': []}
 
 @typecheck
-def upsert(new_note: dict):
+def upsert(head: str, body: list, file: str):
     """syncs the database with the python Note class,
     merging the bodies of notes who share heads.
     """
-    head = new_note['head']
     old_note = get(head)
-    body = merge(old_note['body'], new_note['body'])
-    new_note = dict(Note(head=head, body=body))
+    body = merge(old_note['body'], body)
+    new_note = dict(Note(head=head, body=body, file=file))
 
     return collection.update({'head':head}, new_note, upsert=True)
+
+def remove_collection():
+    return collection.remove()
