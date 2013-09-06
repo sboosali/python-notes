@@ -44,18 +44,18 @@ def get_regex(ops):
     if isinstance(ops, tuple):
         return '(%s)' % '.*'.join(map(get_regex, ops))
 
-def parse(is_op, ops, line):
+def _head(is_op, ops, line):
     """
 
-    assert parse(['-'], '1+2') == '1+2'
-    assert parse(['+'], '1+2') == ['1','+','2']
-    assert parse(['+', '-'], '1+2-3') == ['1','+','2','-','3']
-    assert parse(['+'], ['1+2', '*', '3+4']) == [['1','+','2'], '*', ['3','+','4']]
+    assert _head(['-'], '1+2') == '1+2'
+    assert _head(['+'], '1+2') == ['1','+','2']
+    assert _head(['+', '-'], '1+2-3') == ['1','+','2','-','3']
+    assert _head(['+'], ['1+2', '*', '3+4']) == [['1','+','2'], '*', ['3','+','4']]
 
     """
     # ~ functor
     if isinstance(line, list):
-        return list(map(lambda subtree: parse(is_op, ops, subtree), line))
+        return list(map(lambda subtree: _head(is_op, ops, subtree), line))
 
     # already parsed
     if is_op(line): return line
@@ -94,9 +94,13 @@ def head(line: str, v=False) -> list:
 
     for prec in precs:
         if v: print('', tree, prec, sep='\n')
-        tree = parse(is_op, prec, tree)
+        tree = _head(is_op, prec, tree)
 
     return tree
+
+def body(tree: list, line: str) -> list:
+    """TODO"""
+    return _head([unparse(tree), line])
 
 def unparse(tree: list) -> str:
     line = ''.join(flatten(tree))

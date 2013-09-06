@@ -23,6 +23,8 @@ def get_args():
                       help='write to database')
     args.add_argument('--get', type=str,
                       help='return the body of the head given')
+    args.add_argument('--aliases', action='store_true',
+                      help='shows all aliases')
     args.add_argument('files', nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
@@ -49,6 +51,7 @@ def main():
         args.freqs = True
         args.parse = True
         args.write = True
+        args.aliases = True
         args.get = 'leonard cohen'
 
     files = args.files if args.files else get_dropbox_notes()
@@ -84,6 +87,15 @@ def main():
         h1('GET')
         note = N.get(args.get)
         note.print()
+
+    if args.aliases:
+        h1('ALIASES')
+        for note in notes:
+            aliases = parse.aliases(note.head)
+            if aliases:
+                print()
+                print(note.head)
+                print(aliases)
 
 if __name__=='__main__':
     main()
