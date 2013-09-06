@@ -11,12 +11,12 @@ collection.create_index('head', unique=True)
 
 
 @typecheck
-def get(head: str):
+def get(head: str) -> dict:
     """get a note by its head from the database if it exists
     (exclude mongo's "_id")
     """
-    db_note = collection.find_one({'head':head}, {'_id':False})
-    return db_note if db_note else {'head':head, 'body': []}
+    note = collection.find_one({'head':head}, {'_id':False})
+    return note if note else {'head':head, 'body': []}
 
 @typecheck
 def upsert(new_note: dict):

@@ -1,6 +1,8 @@
 #!/usr/bin/python
 from __future__ import division
 from util import *
+import db
+import parse
 
 
 """ e.g. note
@@ -50,6 +52,7 @@ class Note:
         >>> assert Note(**data) == Note(**data)
         and Note must the same internally
         """
+        body = [line.strip() for line in body if line.strip()]
 
         if head in cls.notes:
             note = cls.notes[head]
@@ -76,8 +79,9 @@ class Note:
 
     def print(self):
         print()
-        print('head:', self.head)
-        print('body:', self.body)
+        print('[head]', self.head)
+        for line in self.body:
+            print('[body]', line)
 
     @property
     def lines(self):
@@ -87,9 +91,7 @@ class Note:
         return self.head
 
 def notify(lines):
-    """makes a paragraph of text into a Note
-    parses head
-    parses each line in body
+    """TODO parses text => creates Note => updates DB
     """
     if not lines: return
 
@@ -102,9 +104,16 @@ def notify(lines):
     note = Note(head=head, body=body)
     return note
 
-def get_aliases(line):
-    aliases = line.split(', ')
-    return aliases if len(aliases)>1 else None
-
 def get_notes():
     return list(Note.notes.values())
+
+@typecheck
+def get(query: str) -> Note:
+    """fuzzy search, where the fuzz are:
+    *TODO aliases
+    *TODO synonyms
+    *TODO typos
+    """
+    data = db.get(query)
+    note = Note(**data)
+    return note

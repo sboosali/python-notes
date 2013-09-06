@@ -1,16 +1,18 @@
 #!/usr/bin/python3
-from __future__ import division
+import argparse
 import glob
 import os
-import argparse
-import db
+
 from util import *
-from notes import notify, get_notes
-from parsing import parse_head
+import parse
+import db
+import notes as N
 
 
 def get_args():
     args = argparse.ArgumentParser()
+    args.add_argument('--test', action='store_true',
+                      help='integration tests all options')
     args.add_argument('--head', action='store_true',
                       help='show all heads')
     args.add_argument('--freqs', action='store_true',
@@ -19,8 +21,8 @@ def get_args():
                       help='parse all heads')
     args.add_argument('--write', action='store_true',
                       help='write to database')
-    args.add_argument('--test', action='store_true',
-                      help='integration tests all options')
+    args.add_argument('--get', type=str,
+                      help='return the body of the head given')
     args.add_argument('files', nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
@@ -47,6 +49,7 @@ def main():
         args.freqs = True
         args.parse = True
         args.write = True
+        args.get = 'leonard cohen'
 
     files = args.files if args.files else get_dropbox_notes()
     files = [open(file).read() for file in files]
@@ -55,8 +58,8 @@ def main():
     blocks = [block.split('\n') for block in blocks]
 
     for lines in blocks:
-        notify(lines)
-    notes = get_notes()
+        N.notify(lines)
+    notes = N.get_notes()
 
     if args.head:
         h1('HEAD')
@@ -71,11 +74,16 @@ def main():
         for note in notes:
             print()
             print(note.head)
-            print(parse_head(note.head))
+            print(parse.head(note.head))
 
     if args.write:
         h1('WRITE')
         write_notes_to_database(notes)
+
+    if args.get:
+        h1('GET')
+        note = N.get(args.get)
+        note.print()
 
 if __name__=='__main__':
     main()
