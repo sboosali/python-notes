@@ -1,9 +1,12 @@
 import pymongo
 from util import *
 from notes import Note
+import yaml
 
-
-client = pymongo.MongoClient('localhost', 27017)
+config = yaml.load(open('config.yaml'))
+host = config['mongo_host']
+port = config['mongo_port']
+client = pymongo.MongoClient(host, port)
 database = client.notes
 collection = database['notes']
 
