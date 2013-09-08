@@ -20,6 +20,18 @@ def flatten(l):
     if l==[]: return []
     return functools.reduce(lambda xs,ys: xs+ys, map(flatten, l))
 
+def stagger(xs, ys):
+    """
+    stagger(['a','b','c'],[1,2]) == ['a',1,'b',2,'c']
+    """
+    xs = iter(xs)
+    ys = iter(ys)
+    zs = [next(xs)]
+    for (y,x) in zip(ys,xs):
+        zs.append(y)
+        zs.append(x)
+    return zs
+
 def print_heads(notes):
     for note in notes:
         print()
@@ -48,7 +60,9 @@ def merge(xs,ys):
 def merge_dicts(x:dict, y:dict):
     return dict(list(x.items()) + list(y.items()))
 
+
 def typecheck(f):
+
     def typechecked(*args, **kwargs):
         types = f.__annotations__
         positionals = inspect.getfullargspec(f).args
@@ -59,5 +73,16 @@ def typecheck(f):
                 msg = 'in "{f}(... {var}:{typ} ...)", "{var}" was "{val}"'
                 msg = msg.format(**{'f': f.__name__, 'var':var, 'val':val, 'typ':typ})
                 raise TypeError(msg)
-        return f(*args, **kwargs)
+
+        return_val = f(*args, **kwargs)
+
+        if 'return' in types:
+            return_type = types['return']
+            if not isinstance(return_val, return_type):
+                msg = 'in "{f}(...) -> {typ}", return value was "{val}"'
+                msg = msg.format(**{'f': f.__name__, 'val':return_val, 'typ':return_type})
+                raise TypeError(msg)
+
+        return return_val
+
     return typechecked

@@ -3,15 +3,21 @@ from util import *
 from notes import Note
 import yaml
 
+
 config = yaml.load(open('config.yaml'))
 host = config['mongo_host']
 port = config['mongo_port']
+
 client = pymongo.MongoClient(host, port)
 database = client.notes
-collection = database['notes']
+collection = database.notes
 
 collection.create_index('head', unique=True)
 
+
+def stats():
+    """(all sizes in bytes)"""
+    return database.command('collstats', 'notes')
 
 @typecheck
 def get(head: str) -> dict:

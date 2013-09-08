@@ -76,8 +76,8 @@ class Note:
         return 'Note(head="%s")' % self.head
     def __hash__(self):
         return hash(self.head)
-    def __cmp__(x, y):
-        return cmp(x.head, y.head)
+    def __cmp__(self, other):
+        return cmp(self.head, other.head)
 
     def print(self):
         print()

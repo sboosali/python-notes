@@ -13,6 +13,8 @@ def get_args():
     args = argparse.ArgumentParser()
     args.add_argument('--test', action='store_true',
                       help='integration tests all options')
+    args.add_argument('-v', action='store_true',
+                      help='verbose option')
     args.add_argument('--head', action='store_true',
                       help='show all heads')
     args.add_argument('--freqs', action='store_true',
@@ -79,13 +81,6 @@ def main():
         h1('FREQS')
         print_first_token_frequencies(notes)
 
-    if args.parse:
-        h1('PARSE')
-        for note in notes:
-            print()
-            print(note.head)
-            print(parse.head(note.head))
-
     if args.write:
         h1('WRITE')
         write_notes_to_database(notes)
@@ -103,6 +98,14 @@ def main():
                 print()
                 print(note.head)
                 print(aliases)
+
+    if args.parse:
+        h1('PARSE')
+        for note in notes:
+            print()
+            print(note.head)
+            tree = parse.head(note.head, v=args.v)
+            print(tree)
 
 
 if __name__=='__main__':
