@@ -1,5 +1,5 @@
 import unittest as T
-from ..parsing import *
+from ..parse import *
 
 
 class ParsingTests(T.TestCase):
@@ -25,6 +25,16 @@ class ParsingTests(T.TestCase):
         ternary_operator = parse_head('x < y where z')
         self.assertEqual(ternary_operator,
                          ['x', ' < ', 'y where z'])
+
+    def test_cst(self):
+        tree = parse.head('3   =   1+2 * 3+4   /   7')
+        T.assertEqual(tree.op, ['  =  '])
+
+        leaf = tree[0]
+        T.assertEqual(leaf, '3')
+
+        subtree = tree[-1]
+        T.assertEqual(subtree.op, ['   *   ', '   /   '])
 
 if __name__=='__main__':
     T.main()

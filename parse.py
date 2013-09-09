@@ -79,15 +79,34 @@ def get_regex_from_ternop(op):
     regex = regex.format(*operators, **operands)
     return regex
 
+class CST(list):
+    """concrete syntax tree"""
+    def __init__(self, op, line):
+        super().__init__(line)
+        self.op = op
+
+    def map(self, f):
+        """make CST a functor"""
+        op = self.op
+        tree = list(map(f, self))
+        return CST(op, tree)
+
 def parse_binop(op, line):
+    """
+
+    >>> assert parse_binop(Binop('->'), 'x -> y -> z') == CST(['->'], ['x ', '->', ' y ', '->', ' z'])
+
+    """
     regex = get_regex_from_binop(op)
     tree = re.split(regex, line)
-    return tree if len(tree)>1 else line
+    return CST(op, tree) if len(tree)>1 else line
 
 def parse_ternop(op, line):
     """
     filter away empty matches
     e.g. '[head]' =match=> ['', '[', 'head', ']', ''] =filter=> ['[', 'head', ']']
+
+    >>> assert parse_ternop(Ternop('~', 'but'), 'x ~ y but z') == CST(('~', 'but'), ['x ', '~', ' y ', 'but', ' z'])
     """
     regex = get_regex_from_ternop(op)
     match = re.search(regex, line)
@@ -97,21 +116,9 @@ def parse_ternop(op, line):
         operands = [match['A'], match['B'], match['C']]
         tree = stagger(operands, operators)
         tree = list(filter(bool, tree))
-        return tree
+        return CST(op, tree)
     else:
         return line
-
-def aliases(line):
-    tree = line.split(' , ')
-    return tree if len(tree)>1 else None
-
-def conjunction(line):
-    tree = line.split(' . ')
-    return tree if len(tree)>1 else None
-
-def unparse(tree: list) -> str:
-    line = ''.join(flatten(tree))
-    return line
 
 def _head(is_op, op, line):
     """tries to match a list of ops to a line,
@@ -127,12 +134,11 @@ def _head(is_op, op, line):
     >>> assert _head(is_op, ['+'], ['1+2', '*', '3+4']) == [['1','+','2'], '*', ['3','+','4']]
 
     """
-    # ~ functor
-    if isinstance(line, list):
-        return list(map(lambda subtree: _head(is_op, op, subtree), line))
+    if isinstance(line, CST):
+        return line.map(lambda subtree: _head(is_op, op, subtree))
 
-    # if the line itself is an op, it was already parsed
     if is_op(line):
+        # already parsed
         return line
 
     if isinstance(op, Binop):
@@ -168,16 +174,29 @@ def head(line: str, v=False) -> list:
 
     """
 
+    # e.g. = [Binop(['<', '>']), Ternop('<', 'where')]
     operators = list(get_operators(OPERATORS, line))
+
+    # e.g. = {'<', '>', 'where'}
+    # operators to symbols is many-to-one
     all_operators = {symbol for operator in operators for symbol in operator}
     def is_op(line): return line in all_operators
 
     tree = line
     for operator in operators:
         if v: print('', tree, operator, sep='\n')
+        # each pass may or may not 'deepen' the tree
         tree = _head(is_op, operator, tree)
     return tree
 
 def body(tree: list, line: str) -> list:
     """TODO"""
     return _head([unparse(tree), line])
+
+def aliases(line):
+    tree = line.split(' , ')
+    return tree if len(tree)>1 else None
+
+def unparse(tree: list) -> str:
+    line = ''.join(flatten(tree))
+    return line
