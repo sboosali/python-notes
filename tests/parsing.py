@@ -36,5 +36,15 @@ class ParsingTests(T.TestCase):
         subtree = tree[-1]
         T.assertEqual(subtree.op, ['   *   ', '   /   '])
 
+    def test_min_spaces(self):
+        """
+        the versus operator 'v' must not bug out tokenizing
+        arithmetic operators like '+' can be spaceless
+        grouping operators like '[ ]' can be spaceless
+        """
+        assert parse.head('vvvvvv') == 'vvvvvv'
+        assert parse.head('1+2') == ['1','+','2']
+        assert parse.head('[head]') == ['[','head',']']
+
 if __name__=='__main__':
     T.main()

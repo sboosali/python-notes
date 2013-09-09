@@ -4,7 +4,7 @@ use "import parse" to document the parsing functions like so: "parse.head()"
 import itertools
 import re
 from util import *
-from grammar import Binop, Ternop
+from grammar import Binop, Ternop, Quatrop
 from grammar import OPERATORS
 
 
@@ -22,6 +22,13 @@ def whiten(op, n):
         l = ' '*n + l + ' '*n
         r = ' '*n + r + ' '*n
         return Ternop(l, r)
+    if isinstance(op, Quatrop):
+        l, m, r = op
+        l = ' '*n + l + ' '*n
+        m = ' '*n + m + ' '*n
+        r = ' '*n + r + ' '*n
+        return Quatrop(l, m, r)
+
 
 def get_spacing(line, min_spaces=0):
     """
@@ -52,7 +59,8 @@ def get_spacing(line, min_spaces=0):
 def get_operators(operators, line):
     for n_spaces in get_spacing(line):
         for operator in operators:
-             yield whiten(operator, n_spaces)
+            if operator.min_spaces <= n_spaces:
+                yield whiten(operator, n_spaces)
 
 def get_regex_from_binop(op):
     """binary operators (unlike multinary operators):
@@ -76,6 +84,22 @@ def get_regex_from_ternop(op):
                 'B': r'(?P<B>.*)',
                 'C': r'(?P<C>.*)'}
     regex = r'({A}{0}{B}{1}{C})'
+    regex = regex.format(*operators, **operands)
+    return regex
+
+
+def get_regex_from_quatrop(op):
+    """
+
+    >>> assert get_regex_from_quatrop(Quatrop(' ~ ', ' as ', ' ~ ')) == r'((?P<A>.*)\ \~\ (?P<B>.*)\ as\ (?P<C>.*)\ \~\ (?P<D>.*))'
+
+    """
+    operators = map(re.escape, op)
+    operands = {'A': r'(?P<A>.*)',
+                'B': r'(?P<B>.*)',
+                'C': r'(?P<C>.*)',
+                'D': r'(?P<D>.*)'}
+    regex = r'({A}{0}{B}{1}{C}{2}{D})'
     regex = regex.format(*operators, **operands)
     return regex
 
@@ -120,6 +144,24 @@ def parse_ternop(op, line):
     else:
         return line
 
+def parse_quatrop(op, line):
+    """
+
+    >>> assert parse_quatrop(Quatrop(' ~ ', ' as ', ' ~ '), 'a ~ b as x ~ y') == CST((' ~ ', ' as ', ' ~ '), ['a', ' ~ ', 'b', ' as ', 'x', ' ~ ', 'y'])
+    """
+
+    regex = get_regex_from_quatrop(op)
+    match = re.search(regex, line)
+    if match:
+        match = match.groupdict()
+        operators = op
+        operands = [match['A'], match['B'], match['C'], match['D']]
+        tree = stagger(operands, operators)
+        tree = list(filter(bool, tree))
+        return CST(op, tree)
+    else:
+        return line
+
 def _head(is_op, op, line):
     """tries to match a list of ops to a line,
     returning a Tree if it can match and
@@ -146,6 +188,9 @@ def _head(is_op, op, line):
 
     if isinstance(op, Ternop):
         return parse_ternop(op, line)
+
+    if isinstance(op, Quatrop):
+        return parse_quatrop(op, line)
 
     return line
 
