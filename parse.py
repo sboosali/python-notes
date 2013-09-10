@@ -16,19 +16,21 @@ def whiten(op, n):
 
     """
     if isinstance(op, Binop):
-        return Binop([' '*n + sym + ' '*n for sym in op])
+        return Binop([' '*n + sym + ' '*n for sym in op],
+                     min_spaces=op.min_spaces)
     if isinstance(op, Ternop):
         l, r = op
         l = ' '*n + l + ' '*n
         r = ' '*n + r + ' '*n
-        return Ternop(l, r)
+        return Ternop(l, r,
+                     min_spaces=op.min_spaces)
     if isinstance(op, Quatrop):
         l, m, r = op
         l = ' '*n + l + ' '*n
         m = ' '*n + m + ' '*n
         r = ' '*n + r + ' '*n
-        return Quatrop(l, m, r)
-
+        return Quatrop(l, m, r,
+                     min_spaces=op.min_spaces)
 
 def get_spacing(line, min_spaces=0):
     """

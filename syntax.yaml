@@ -28,6 +28,7 @@ operators:
  - '( )'
  - '{ }'
 
+default_min_spaces: 1
 min_spaces:
  '+': 0
  '-': 0
