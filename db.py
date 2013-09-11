@@ -1,12 +1,11 @@
 import pymongo
 from util import *
 from notes import Note
-import yaml
+import config
 
 
-config = yaml.load(open('config.yaml'))
-host = config['mongo_host']
-port = config['mongo_port']
+host = config.db['mongo_host']
+port = config.db['mongo_port']
 
 client = pymongo.MongoClient(host, port)
 database = client.notes

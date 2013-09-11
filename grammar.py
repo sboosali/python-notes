@@ -1,31 +1,51 @@
-""" spec
-a `prec` is a list of `op` that share the same precedence
-an 'op' is an operator
-
-"""
-import yaml
 from util import *
+import config
 
+
+default_min_spaces = config.syntax['default_min_spaces']
 
 class Op: pass
 
+class Nulop(tuple, Op):
+    def eqv(self, op):
+        return not op
+
 class Binop(list, Op):
-    """
+    """a list of binary operators that share the same precedence.
 
     assert isinstance(Binop(':='), Binop)
     assert isinstance(Binop(['->','<-']), Binop)
     assert Binop('==') == ['==']
 
     """
-    def __init__(self, ops, min_spaces):
+    def __init__(self, ops, min_spaces=default_min_spaces):
         if isinstance(ops, str): ops = [ops]
         super().__init__(ops)
         self.min_spaces = min_spaces
     def __hash__(self):
         return hash(' '.join(self))
 
+    def eqv(self, op):
+        """two operators may be equivalent:
+        * even if they have different precedences
+        * even if one is just a string
+
+        can be used to compare python-class operators from the code with string operators from the config.
+
+        >>> assert Binop(' , ').eqv(',')
+        >>> assert Binop('default').eqv('default')
+        >>> assert Binop(['+', '-']).eqv('+')
+
+        """
+        if isinstance(op, str):
+            ops = [sym.strip() for sym in self]
+            return op in ops
+        else:
+            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
+
+
 class Ternop(tuple, Op):
-    """
+    """a ternary operator.
 
     assert isinstance(Ternop('<', 'where'), Ternop)
     assert Ternop('~', 'but') == ('~', 'but')
@@ -34,11 +54,28 @@ class Ternop(tuple, Op):
     def __new__(cls, l, r, **kwargs):
         assert is_ternop(l + ' ' + r)
         return super().__new__(cls, (l, r))
-    def __init__(self, *args, min_spaces=1):
+    def __init__(self, *args, min_spaces=default_min_spaces):
         self.min_spaces = min_spaces
 
+    def eqv(self, op):
+        """two operators may be equivalent:
+        * even if they have different precedences
+        * even if one is just a string
+
+        can be used to compare python-class operators from the code with string operators from the config.
+
+        >>> assert Ternop(' < ', ' where ').eqv('< where')
+
+        """
+        if isinstance(op, str):
+            syms = [sym.strip() for sym in self]
+            return op.split() == syms
+        else:
+            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
+
+
 class Quatrop(tuple, Op):
-    """
+    """a quaternary operator.
 
     assert isinstance(Quatrop('~', 'as, '~'), Quatrop)
     assert Quatrop('~', 'as, '~') == ('~', 'as, '~')
@@ -47,8 +84,23 @@ class Quatrop(tuple, Op):
     def __new__(cls, l, m, r, **kwargs):
         assert is_quatrop(' '.join([l,m,r]))
         return super().__new__(cls, (l, m, r))
-    def __init__(self, *args, min_spaces=1):
+    def __init__(self, *args, min_spaces=default_min_spaces):
         self.min_spaces = min_spaces
+    def eqv(self, op):
+        """two operators may be equivalent:
+        * even if they have different precedences
+        * even if one is just a string
+
+        can be used to compare python-class operators from the code with string operators from the config.
+
+        >>> assert Quatrop('~', ' as ', '~').eqv('~ as ~')
+
+        """
+        if isinstance(op, str):
+            syms = [sym.strip() for sym in self]
+            return op.split() == syms
+        else:
+            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
 
 def is_binop(op):
     return len(op.split())==1
@@ -62,6 +114,7 @@ def is_ternop(op):
 def is_quatrop(op):
     return len(op.split())==3
 
+@as_list
 def munge_syntax(syntax):
     """groups operators by precedence.
     the longer operators must come before the shorter ones,
@@ -94,8 +147,7 @@ CONNECTIVES = 'and or not but while'.split()
 INTERROGATIVES = 'who what where when why how'.split()
 
 #: [Op]
-SYNTAX = yaml.load(open('syntax.yaml'))
-OPERATORS = list(munge_syntax(SYNTAX))
+OPERATORS = munge_syntax(config.syntax)
 assert has_no_duplicates(OPERATORS)
 
 if __name__=='__main__':

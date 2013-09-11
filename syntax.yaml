@@ -1,4 +1,5 @@
 operators:
+ # concrete syntax of operator-precedence grammar
 
  - '< where'
  - '~ but'
@@ -17,19 +18,21 @@ operators:
  - ['<=', '=>', '<==', '==>']
  - ['<~', '~>']
 
+ - '.'
+ - ','
+
  - ['+', '-']
  - ['*', '/']
  - '^'
-
- - '.'
- - ','
 
  - '[ ]'
  - '( )'
  - '{ }'
 
 default_min_spaces: 1
+
 min_spaces:
+
  '+': 0
  '-': 0
  '*': 0

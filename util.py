@@ -86,3 +86,22 @@ def typecheck(f):
         return return_val
 
     return typechecked
+
+
+def as_list(f):
+    """ e.g.
+
+    @as_list
+    def f():
+      \"\"\"docstring\"\"\"
+      yield 1
+      yield 2
+    assert f.__doc__ == 'docstring'
+    assert list(f()) == [1,2]
+
+    """
+    def casted_to_list(*args, **kwargs):
+        return list(f(*args, **kwargs))
+    casted_to_list.__name__ = f.__name__
+    casted_to_list.__doc__ = f.__doc__
+    return casted_to_list

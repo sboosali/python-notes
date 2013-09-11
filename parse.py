@@ -4,8 +4,9 @@ use "import parse" to document the parsing functions like so: "parse.head()"
 import itertools
 import re
 from util import *
-from grammar import Binop, Ternop, Quatrop
+from grammar import Op, Nulop, Binop, Ternop, Quatrop
 from grammar import OPERATORS
+import config
 
 
 def whiten(op, n):
@@ -58,7 +59,10 @@ def get_spacing(line, min_spaces=0):
     spacing = reversed(range(min_spaces, 1+max_spaces))
     return spacing
 
+@as_list
 def get_operators(operators, line):
+    """returns an operator of each precedence given the line to parse. 'precedence' means 'number of spaces', bounded below by the operator definition and bounded above by the number of spaces in the line.
+    """
     for n_spaces in get_spacing(line):
         for operator in operators:
             if operator.min_spaces <= n_spaces:
@@ -107,32 +111,79 @@ def get_regex_from_quatrop(op):
 
 class CST(list):
     """concrete syntax tree"""
-    def __init__(self, op, line):
-        super().__init__(line)
+    @typecheck
+    def __init__(self, op: Op, tree: list):
+        super().__init__(tree)
         self.op = op
 
     def map(self, f):
-        """make CST a functor"""
+        """maps a function onto each leaf (i.e. token or unparsed line) of the CST.
+        `t` is either a leaf or a subtree
+        CST : functor
+
+        >>> assert Tree([Tree([1]), Tree([2,3,Tree([4])]), 5]).map(lambda x: x+1) == [[2], [3,4,[5]], 6]
+
+        """
         op = self.op
-        tree = list(map(f, self))
+        tree = [f(t)
+                if not isinstance(t, CST)
+                else t.map(f)
+                for t in self]
         return CST(op, tree)
 
-def parse_binop(op, line):
+class Sym(str):
+    def __getattribute__(self, attr):
+        """transparently return a Sym for any str method call that returns a str.
+
+        the line (regex) parsers wrap operators in Sym's, and the tree (recursive) parsers skip Sym's (meaning, "already parsed").
+
+        >>> assert isinstance(Sym('Sym').strip(), Sym)
+        >>> assert isinstance(Sym('Sym').split(), list)
+
+        """
+        attr = super().__getattribute__(attr)
+        if hasattr(attr, '__call__'):
+            def symbolize(*args, **kwargs):
+                ret = attr(*args, **kwargs)
+                ret = Sym(ret) if isinstance(ret, str) else ret
+                return ret
+            return symbolize
+        else:
+            return attr
+
+def parse_binop(op, line) -> 'str | CST str':
     """
+    wraps the operator(s) in Sym to say "this token has been parsed as a symbol of some operator, don't reparse it".
+
+    cleans the output
+    e.g. ['1 ', ' + ', ' 2'] => ['1',Sym('+'),'2']
 
     >>> assert parse_binop(Binop('->'), 'x -> y -> z') == CST(['->'], ['x ', '->', ' y ', '->', ' z'])
 
     """
     regex = get_regex_from_binop(op)
     tree = re.split(regex, line)
-    return CST(op, tree) if len(tree)>1 else line
 
-def parse_ternop(op, line):
+    if len(tree)>1:
+        tree = [Sym(word) if word in op else word
+                for word in tree]
+        tree = [word.strip() for word in tree if word.strip()]
+        return CST(op, tree)
+    else:
+        return line
+
+def parse_ternop(op, line) -> 'str | CST str':
     """
     filter away empty matches
     e.g. '[head]' =match=> ['', '[', 'head', ']', ''] =filter=> ['[', 'head', ']']
 
+    wraps the operator(s) in Sym to say "this token is a symbol of an operator, don't reparse it".
+
+    cleans the output
+    e.g. ['', ' [ ', 'head', ' ] ', ''] => ['[', 'head', ']']
+
     >>> assert parse_ternop(Ternop('~', 'but'), 'x ~ y but z') == CST(('~', 'but'), ['x ', '~', ' y ', 'but', ' z'])
+
     """
     regex = get_regex_from_ternop(op)
     match = re.search(regex, line)
@@ -141,15 +192,22 @@ def parse_ternop(op, line):
         operators = op
         operands = [match['A'], match['B'], match['C']]
         tree = stagger(operands, operators)
-        tree = list(filter(bool, tree))
+
+        # clean
+        tree = [word.strip() for word in tree if word.strip()]
+        tree = [Sym(word) if word in op else word
+                for word in tree]
+
         return CST(op, tree)
+
     else:
         return line
 
-def parse_quatrop(op, line):
+def parse_quatrop(op, line) -> 'str | CST str':
     """
 
     >>> assert parse_quatrop(Quatrop(' ~ ', ' as ', ' ~ '), 'a ~ b as x ~ y') == CST((' ~ ', ' as ', ' ~ '), ['a', ' ~ ', 'b', ' as ', 'x', ' ~ ', 'y'])
+
     """
 
     regex = get_regex_from_quatrop(op)
@@ -159,29 +217,34 @@ def parse_quatrop(op, line):
         operators = op
         operands = [match['A'], match['B'], match['C'], match['D']]
         tree = stagger(operands, operators)
-        tree = list(filter(bool, tree))
+
+        # clean
+        tree = [word.strip() for word in tree if word.strip()]
+        tree = [Sym(word) if word in op else word
+                for word in tree]
+
         return CST(op, tree)
+
     else:
         return line
 
-def _head(is_op, op, line):
+@typecheck
+def _head(op: Op, line: str): # -> 'str | CST str':
     """tries to match a list of ops to a line,
     returning a Tree if it can match and
     the line itself if it can't match.
 
     one step of a top-down operator-precedence parse.
 
-    >>> def is_op(line): return line in ['-', '+']
-    >>> assert _head(is_op, ['-'], '1+2') == '1+2'
-    >>> assert _head(is_op, ['+'], '1+2') == ['1','+','2']
-    >>> assert _head(is_op, ['+', '-'], '1+2-3') == ['1','+','2','-','3']
-    >>> assert _head(is_op, ['+'], ['1+2', '*', '3+4']) == [['1','+','2'], '*', ['3','+','4']]
+    >>> assert _head(Binop(['-']), '1+2') == '1+2'
+    >>> assert _head(Binop([' + ']), '1+2') == '1+2'
+    >>> assert _head(Binop(['+']), '1+2') == ['1','+','2']
+    >>> assert _head(Binop(['+', '-']), '1+2-3') == ['1','+','2','-','3']
+    >>> assert _head(Ternop(' ? ', ' : '), 'cond ? then : else') == ['cond', ' ? ', 'then', ' : ', 'else']
 
     """
-    if isinstance(line, CST):
-        return line.map(lambda subtree: _head(is_op, op, subtree))
 
-    if is_op(line):
+    if isinstance(line, Sym):
         # already parsed
         return line
 
@@ -196,9 +259,11 @@ def _head(is_op, op, line):
 
     return line
 
-def head(line: str, v=False) -> list:
+@typecheck
+def head(line: str, v=False) -> CST:
     """
     parses a head step-by-step.
+    returns the parse tree.
 
     `v` = verbose option to print each step
 
@@ -222,28 +287,32 @@ def head(line: str, v=False) -> list:
     """
 
     # e.g. = [Binop(['<', '>']), Ternop('<', 'where')]
-    operators = list(get_operators(OPERATORS, line))
+    operators = get_operators(OPERATORS, line)
 
-    # e.g. = {'<', '>', 'where'}
-    # operators to symbols is many-to-one
-    all_operators = {symbol for operator in operators for symbol in operator}
-    def is_op(line): return line in all_operators
+    # nothing parsed
+    _tree = CST(Nulop(), [line])
 
-    tree = line
+    # try to parse every subtree with each operator at each precedence
+    tree = _tree
     for operator in operators:
         if v: print('', tree, operator, sep='\n')
         # each pass may or may not 'deepen' the tree
-        tree = _head(is_op, operator, tree)
+        tree = tree.map(lambda line: _head(operator, line))
+
+    # something parsed
+    if tree != _tree: tree = tree[0]
+
     return tree
 
 def body(tree: list, line: str) -> list:
     """TODO"""
-    return _head([unparse(tree), line])
-
-def aliases(line):
-    tree = line.split(' , ')
-    return tree if len(tree)>1 else None
 
 def unparse(tree: list) -> str:
     line = ''.join(flatten(tree))
     return line
+
+def is_alias(tree):
+    """a parse tree is an alias if the top-level operator is the alias operator.
+    """
+    alias_op = config.concrete['alias']
+    return tree.op.eqv(alias_op)

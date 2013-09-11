@@ -11,25 +11,35 @@ import notes as N
 
 def get_args():
     args = argparse.ArgumentParser()
-    args.add_argument('--test', action='store_true',
+    args.add_argument('--test', '-t',
+                      action='store_true',
                       help='integration tests all options')
-    args.add_argument('-v', action='store_true',
+    args.add_argument('-v',
+                      action='store_true',
                       help='verbose option')
-    args.add_argument('--head', action='store_true',
+    args.add_argument('--head',
+                      action='store_true',
                       help='show all heads')
-    args.add_argument('--freqs', action='store_true',
+    args.add_argument('--freqs',
+                      action='store_true',
                       help='show operator frequencies')
-    args.add_argument('--parse', action='store_true',
+    args.add_argument('--parse',
+                      action='store_true',
                       help='parse all heads')
-    args.add_argument('--write', action='store_true',
+    args.add_argument('--write',
+                      action='store_true',
                       help='write to database')
-    args.add_argument('--get', type=str,
+    args.add_argument('--get',
+                      type=str,
                       help='return the body of the head given')
-    args.add_argument('--aliases', action='store_true',
+    args.add_argument('--aliases',
+                      action='store_true',
                       help='shows all aliases')
-    args.add_argument('--destroy', action='store_true',
+    args.add_argument('--destroy',
+                      action='store_true',
                       help='destroy all documents in "notes" collection')
-    args.add_argument('files', nargs='*',
+    args.add_argument('files',
+                      nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
     args = args.parse_args()
     return args
@@ -93,10 +103,11 @@ def main():
     if args.aliases:
         h1('ALIASES')
         for note in notes:
-            aliases = parse.aliases(note.head)
-            if aliases:
+            aliases = parse.head(note.head)
+            if parse.is_alias(aliases):
                 print()
                 print(note.head)
+                print(aliases.op)
                 print(aliases)
 
     if args.parse:
