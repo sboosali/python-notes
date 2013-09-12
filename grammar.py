@@ -2,47 +2,60 @@ from util import *
 import config
 
 
-default_min_spaces = config.syntax['default_min_spaces']
-
 class Op: pass
 
 class Nulop(tuple, Op):
-    def eqv(self, op):
-        return not op
+    syms = ['']
 
 class Binop(list, Op):
     """a list of binary operators that share the same precedence.
+
+    if at the start of a phrase, a Binop acts as a unary operator.
+    e.g. "piracetam -> + ACh" may be parsed as "['piracetam', '->', ['+', 'ACh']]" which may be interpreted as "piracetam causes more acetylcholine" (i.e. unary "+" may mean "more" while binary "+" means "plus")
+
 
     assert isinstance(Binop(':='), Binop)
     assert isinstance(Binop(['->','<-']), Binop)
     assert Binop('==') == ['==']
 
     """
-    def __init__(self, ops, min_spaces=default_min_spaces):
-        if isinstance(ops, str): ops = [ops]
-        super().__init__(ops)
-        self.min_spaces = min_spaces
+
+    def __init__(self, symbols, min_spaces=None):
+        assert is_binop(symbols)
+
+        if isinstance(symbols, str):
+            self.ops = [symbols]
+        if isinstance(symbols, list):
+            self.ops = sorted(symbols, key=len, reverse=True)
+
+        if min_spaces is not None:
+            self.min_spaces = min_spaces
+        else:
+            self.min_spaces = min(config.min_spaces[op] for op in self.syms)
+
+        super().__init__(self.ops)
+
     def __hash__(self):
         return hash(' '.join(self))
 
-    def eqv(self, op):
-        """two operators may be equivalent:
-        * even if they have different precedences
-        * even if one is just a string
+    @property
+    def syms(self) -> list:
+        """the symbol(s) of the config representation
 
-        can be used to compare python-class operators from the code with string operators from the config.
-
-        >>> assert Binop(' , ').eqv(',')
-        >>> assert Binop('default').eqv('default')
-        >>> assert Binop(['+', '-']).eqv('+')
+        >>> assert Binop([' -> ', ' <- ']).syms == ['->', '<-']
 
         """
-        if isinstance(op, str):
-            ops = [sym.strip() for sym in self]
-            return op in ops
-        else:
-            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
+        return [sym.strip() for sym in self.ops]
 
+    def whiten(self, n):
+        """decrease precedence of operator by adding spaces.
+
+        >>> assert whiten(Binop('->'), 1) == [' -> ']
+        >>> assert whiten(Binop(['->', '<-']), 1) == [' -> ', ' <- ']
+
+        """
+        op = [' '*n + sym + ' '*n for sym in self.ops]
+        return Binop(op, min_spaces=self.min_spaces)
 
 class Ternop(tuple, Op):
     """a ternary operator.
@@ -54,65 +67,48 @@ class Ternop(tuple, Op):
     def __new__(cls, l, r, **kwargs):
         assert is_ternop(l + ' ' + r)
         return super().__new__(cls, (l, r))
-    def __init__(self, *args, min_spaces=default_min_spaces):
-        self.min_spaces = min_spaces
 
-    def eqv(self, op):
-        """two operators may be equivalent:
-        * even if they have different precedences
-        * even if one is just a string
+    def __init__(self, l, r, min_spaces=None):
+        if min_spaces is not None:
+            self.min_spaces = min_spaces
+        else:
+            self.min_spaces=config.min_spaces[self.syms[0]]
 
-        can be used to compare python-class operators from the code with string operators from the config.
+    @property
+    def syms(self) -> list:
+        """the config representation
 
-        >>> assert Ternop(' < ', ' where ').eqv('< where')
+        >>> assert Ternop(' < ', ' where ').syms == ['< where']
 
         """
-        if isinstance(op, str):
-            syms = [sym.strip() for sym in self]
-            return op.split() == syms
-        else:
-            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
+        return [' '.join(sym.strip() for sym in self)]
 
+    def whiten(self, n):
+        """decrease precedence of operator by adding spaces.
 
-class Quatrop(tuple, Op):
-    """a quaternary operator.
-
-    assert isinstance(Quatrop('~', 'as, '~'), Quatrop)
-    assert Quatrop('~', 'as, '~') == ('~', 'as, '~')
-
-    """
-    def __new__(cls, l, m, r, **kwargs):
-        assert is_quatrop(' '.join([l,m,r]))
-        return super().__new__(cls, (l, m, r))
-    def __init__(self, *args, min_spaces=default_min_spaces):
-        self.min_spaces = min_spaces
-    def eqv(self, op):
-        """two operators may be equivalent:
-        * even if they have different precedences
-        * even if one is just a string
-
-        can be used to compare python-class operators from the code with string operators from the config.
-
-        >>> assert Quatrop('~', ' as ', '~').eqv('~ as ~')
+        >>> assert Ternop('<', 'where').whiten(1) == Ternop(' < ', ' where ')
 
         """
-        if isinstance(op, str):
-            syms = [sym.strip() for sym in self]
-            return op.split() == syms
-        else:
-            return [sym.strip() for sym in self] == [sym.strip() for sym in op]
+        l, r = self
+        l = ' '*n + l + ' '*n
+        r = ' '*n + r + ' '*n
+        return Ternop(l, r, min_spaces=self.min_spaces)
+
 
 def is_binop(op):
-    return len(op.split())==1
+    """
 
-def are_binops(ops):
-    return all(is_binop(op) for op in ops)
+    >>> assert is_binop('->')
+    >>> assert is_binop(['->', '<-'])
+
+    """
+    if isinstance(op, str):
+        return len(op.split())==1
+    if isinstance(op, list):
+        return all(map(is_binop, op))
 
 def is_ternop(op):
     return len(op.split())==2
-
-def is_quatrop(op):
-    return len(op.split())==3
 
 @as_list
 def munge_syntax(syntax):
@@ -120,24 +116,15 @@ def munge_syntax(syntax):
     the longer operators must come before the shorter ones,
     for regexes like "( ==> | => )" to work right.
     """
-    operators = syntax['operators']
-    min_spaces = defaultdict(lambda: syntax['default_min_spaces'],
-                             syntax['min_spaces'])
 
-    for op in operators:
-        if isinstance(op, list):
-            ops = op
-            if are_binops(ops):
-                yield Binop(sorted(ops, key=len, reverse=True),
-                            min(min_spaces[op] for op in ops))
+    for symbols in syntax['operators']:
 
-        if isinstance(op, str):
-            if is_binop(op):
-                yield Binop(op, min_spaces[op])
-            if is_ternop(op):
-                yield Ternop(*op.split(), min_spaces=min_spaces[op])
-            if is_quatrop(op):
-                yield Quatrop(*op.split(), min_spaces=min_spaces[op])
+        if is_binop(symbols):
+            yield Binop(symbols)
+
+        elif is_ternop(symbols):
+            l, r = symbols.split()
+            yield Ternop(l,r)
 
 CHARS = '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '-/._' + '#$%^'
 

@@ -4,58 +4,24 @@ use "import parse" to document the parsing functions like so: "parse.head()"
 import itertools
 import re
 from util import *
-from grammar import Op, Nulop, Binop, Ternop, Quatrop
+from grammar import Op, Nulop, Binop, Ternop
 from grammar import OPERATORS
 import config
 
 
-def whiten(op, n):
-    """
-
-    assert whiten(Binop('->'), 1) == [' -> ']
-    assert whiten(Binop(['->', '<-']), 1) == [' -> ', ' <- ']
-
-    """
-    if isinstance(op, Binop):
-        return Binop([' '*n + sym + ' '*n for sym in op],
-                     min_spaces=op.min_spaces)
-    if isinstance(op, Ternop):
-        l, r = op
-        l = ' '*n + l + ' '*n
-        r = ' '*n + r + ' '*n
-        return Ternop(l, r,
-                     min_spaces=op.min_spaces)
-    if isinstance(op, Quatrop):
-        l, m, r = op
-        l = ' '*n + l + ' '*n
-        m = ' '*n + m + ' '*n
-        r = ' '*n + r + ' '*n
-        return Quatrop(l, m, r,
-                     min_spaces=op.min_spaces)
+def get_max_spaces(line):
+    """returns the maximum number of spaces in the line"""
+    if ' ' in line:
+        return max(len(list(xs))
+                   for x,xs
+                   in itertools.groupby(line)
+                   if x==' ')
+    else:
+        return 0
 
 def get_spacing(line, min_spaces=0):
-    """
-    TODO tradeoffs between spaced versus flush operators
-
-    [min_spaces = 0]
-    (good) -> '1+2' => ['1', '+', '2']
-    (bad) -> '5-HT' => ['5', '-', 'HT']
-    (good) -> '[head]' => ['[', 'head', ']']
-    (bad) -> 'Na+' => WRONG (tries to match binary operator)
-
-    [min_spaces = 1]
-    (bad) -> '1+2' => '1+2'
-    (good) -> '5-HT' => '5-HT'
-    (bad) -> '[head]' => '[head]'
-    (good) -> 'Na+' => 'Na+'
-    """
-    if ' ' in line:
-        max_spaces = max(len(list(xs))
-                         for x,xs
-                         in itertools.groupby(line)
-                         if x==' ')
-    else:
-        max_spaces = min_spaces
+    """returns a generator counting down from `max_spaces` to `min_spaces`"""
+    max_spaces = max(get_max_spaces(line), min_spaces)
     spacing = reversed(range(min_spaces, 1+max_spaces))
     return spacing
 
@@ -66,7 +32,7 @@ def get_operators(operators, line):
     for n_spaces in get_spacing(line):
         for operator in operators:
             if operator.min_spaces <= n_spaces:
-                yield whiten(operator, n_spaces)
+                yield operator.whiten(n_spaces)
 
 def get_regex_from_binop(op):
     """binary operators (unlike multinary operators):
@@ -93,21 +59,6 @@ def get_regex_from_ternop(op):
     regex = regex.format(*operators, **operands)
     return regex
 
-
-def get_regex_from_quatrop(op):
-    """
-
-    >>> assert get_regex_from_quatrop(Quatrop(' ~ ', ' as ', ' ~ ')) == r'((?P<A>.*)\ \~\ (?P<B>.*)\ as\ (?P<C>.*)\ \~\ (?P<D>.*))'
-
-    """
-    operators = map(re.escape, op)
-    operands = {'A': r'(?P<A>.*)',
-                'B': r'(?P<B>.*)',
-                'C': r'(?P<C>.*)',
-                'D': r'(?P<D>.*)'}
-    regex = r'({A}{0}{B}{1}{C}{2}{D})'
-    regex = regex.format(*operators, **operands)
-    return regex
 
 class CST(list):
     """concrete syntax tree"""
@@ -165,9 +116,12 @@ def parse_binop(op, line) -> 'str | CST str':
     tree = re.split(regex, line)
 
     if len(tree)>1:
+        # declare already parsed
         tree = [Sym(word) if word in op else word
                 for word in tree]
-        tree = [word.strip() for word in tree if word.strip()]
+        # e.g. ['', '+', 'ACh'] => ['+', 'ACh']
+        tree = [word for word in tree if word.strip()]
+
         return CST(op, tree)
     else:
         return line
@@ -193,40 +147,17 @@ def parse_ternop(op, line) -> 'str | CST str':
         operands = [match['A'], match['B'], match['C']]
         tree = stagger(operands, operators)
 
-        # clean
-        tree = [word.strip() for word in tree if word.strip()]
+        # declare already parsed
         tree = [Sym(word) if word in op else word
                 for word in tree]
+        # e.g. ['', '[', 'context', ']', ''] => ['[', 'context', ']]
+        tree = [word for word in tree if word.strip()]
 
         return CST(op, tree)
 
     else:
         return line
 
-def parse_quatrop(op, line) -> 'str | CST str':
-    """
-
-    >>> assert parse_quatrop(Quatrop(' ~ ', ' as ', ' ~ '), 'a ~ b as x ~ y') == CST((' ~ ', ' as ', ' ~ '), ['a', ' ~ ', 'b', ' as ', 'x', ' ~ ', 'y'])
-
-    """
-
-    regex = get_regex_from_quatrop(op)
-    match = re.search(regex, line)
-    if match:
-        match = match.groupdict()
-        operators = op
-        operands = [match['A'], match['B'], match['C'], match['D']]
-        tree = stagger(operands, operators)
-
-        # clean
-        tree = [word.strip() for word in tree if word.strip()]
-        tree = [Sym(word) if word in op else word
-                for word in tree]
-
-        return CST(op, tree)
-
-    else:
-        return line
 
 @typecheck
 def _head(op: Op, line: str): # -> 'str | CST str':
@@ -253,9 +184,6 @@ def _head(op: Op, line: str): # -> 'str | CST str':
 
     if isinstance(op, Ternop):
         return parse_ternop(op, line)
-
-    if isinstance(op, Quatrop):
-        return parse_quatrop(op, line)
 
     return line
 
@@ -289,30 +217,35 @@ def head(line: str, v=False) -> CST:
     # e.g. = [Binop(['<', '>']), Ternop('<', 'where')]
     operators = get_operators(OPERATORS, line)
 
-    # nothing parsed
-    _tree = CST(Nulop(), [line])
-
-    # try to parse every subtree with each operator at each precedence
-    tree = _tree
+    tree = line
     for operator in operators:
         if v: print('', tree, operator, sep='\n')
         # each pass may or may not 'deepen' the tree
-        tree = tree.map(lambda line: _head(operator, line))
+        if isinstance(tree, str):
+            tree = _head(operator, tree)
+        elif isinstance(tree, CST):
+            tree = tree.map(lambda line: _head(operator, line))
+        else:
+            assert False
 
-    # something parsed
-    if tree != _tree: tree = tree[0]
+    # nothing parsed
+    if isinstance(tree, str): tree = CST(Nulop(), [tree])
 
     return tree
 
-def body(tree: list, line: str) -> list:
+def unparse(tree):
+    """
+
+    >>> line = '3   =   1+2 * 3+4   /   7'
+    >>> assert parse.unparse(parse.head(line)) == line
+
+    """
+    return ''.join(flatten(tree))
+
+def note(lines):
     """TODO"""
 
-def unparse(tree: list) -> str:
-    line = ''.join(flatten(tree))
-    return line
-
-def is_alias(tree):
-    """a parse tree is an alias if the top-level operator is the alias operator.
-    """
-    alias_op = config.concrete['alias']
-    return tree.op.eqv(alias_op)
+class AST(list):
+    def __init__(self, cst):
+        super().__init__(cst)
+        self.edges = flatten([config.meaning[sym] for sym in cst.op.syms])

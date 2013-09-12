@@ -1,9 +1,14 @@
 operators:
  # concrete syntax of operator-precedence grammar
+ # in descending precedence
+
+ - '( )'
+ - '[ ]'
+ - '{ }'
 
  - '< where'
  - '~ but'
- - '~ as ~'
+# - '~ as ~'
 
  - ':='
  - ':-'
@@ -21,24 +26,21 @@ operators:
  - '.'
  - ','
 
+ - '=='
  - ['+', '-']
  - ['*', '/']
  - '^'
 
- - '[ ]'
- - '( )'
- - '{ }'
-
 default_min_spaces: 1
 
 min_spaces:
+
+ '( )': 0
+ '[ ]': 0
+ '{ }': 0
 
  '+': 0
  '-': 0
  '*': 0
  '/': 0
  '^': 0
-
- '[ ]': 0
- '( )': 0
- '{ }': 0

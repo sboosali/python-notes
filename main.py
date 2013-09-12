@@ -5,6 +5,7 @@ import os
 
 from util import *
 import parse
+from parse import AST
 import db
 import notes as N
 
@@ -103,12 +104,13 @@ def main():
     if args.aliases:
         h1('ALIASES')
         for note in notes:
-            aliases = parse.head(note.head)
-            if parse.is_alias(aliases):
+            cst = parse.head(note.head)
+            ast = AST(cst)
+            if 'alias' in ast.edges:
                 print()
                 print(note.head)
-                print(aliases.op)
-                print(aliases)
+                print(cst.op, '=>', ast.edges)
+                print(ast)
 
     if args.parse:
         h1('PARSE')
