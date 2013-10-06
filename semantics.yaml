@@ -1,7 +1,32 @@
 meaning:
- # mapping from concrete syntax (config strings) to abstract syntax (python classes)
+ # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
+ "," : alias
+ +  : plus, more
+ -> : causes
+ <- : is_caused_by
+ ~ : related
+ ≈ : similar
 
- ','  : alias
- '+'  : [plus, more]
- '->' : causes
- '<-' : is_caused_by
+opposites:
+# or will you trip over your bootstraps into the rabbit hole of defining the properties of the semantics within the syntax itself?
+# "opposite" is a relation, naturally an edge. the edges "->" and "<-" should have the "opposites" edge between them.
+
+properties:
+ # with graphical interpretation
+ - symmetric #: directed => undirected
+ - transitive #: in/out edge => path to/from
+
+relations:
+ # nice abuse of notation with colon
+
+ related: symmetric
+ similar: symmetric
+
+ iff: symmetric, transitive
+ equals: symmetric, transitive
+
+ causes: transitive
+ implies: transitive
+ subset: transitive
+
+ alias: transitive

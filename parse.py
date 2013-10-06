@@ -199,18 +199,18 @@ def head(line: str, v=False) -> CST:
 
     x        => (node x)
     x , y    => (aliases x y ...)
-    x . y    => (conjunction x y ...)
     x ~ y    => (like x y ...)
     x = y    => (equals x y ...)
     x := y   => (define x y)
     x < y    => (subset x y ...)
     x : y    => (is_a x y)
+    x -> y   => (edge "->" x y ...)
 
+    x . y    => (conjunction x y ...)
     x ... y  => (ellipses x y)
     [x]      => (context x)
     word. x  => (parser "word" x)
     . x      => (comment x)
-    x -> y   => (edge "->" x y ...)
 
     """
 

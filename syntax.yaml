@@ -2,9 +2,7 @@ operators:
  # concrete syntax of operator-precedence grammar
  # in descending precedence
 
- - '( )'
  - '[ ]'
- - '{ }'
 
  - '< where'
  - '~ but'
@@ -23,8 +21,12 @@ operators:
  - ['<=', '=>', '<==', '==>']
  - ['<~', '~>']
 
+ - '{ }'
+
  - '.'
  - ','
+
+ - '( )'
 
  - '=='
  - ['+', '-']

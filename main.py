@@ -24,9 +24,13 @@ def get_args():
     args.add_argument('--freqs',
                       action='store_true',
                       help='show operator frequencies')
-    args.add_argument('--parse',
+    args.add_argument('--parse-all',
                       action='store_true',
                       help='parse all heads')
+    args.add_argument('--parse',
+                      type=str,
+                      default='',
+                      help='takes a string and parses it')
     args.add_argument('--write',
                       action='store_true',
                       help='write to database')
@@ -78,7 +82,7 @@ def main():
         for lines in blocks:
             N.notify(file, lines)
 
-    notes = N.get_notes()
+    notes = N.all_notes()
 
     if args.destroy:
         h1('DESTROY')
@@ -96,11 +100,6 @@ def main():
         h1('WRITE')
         write_notes_to_database(notes)
 
-    if args.get:
-        h1('GET')
-        note = N.get(args.get)
-        note.print()
-
     if args.aliases:
         h1('ALIASES')
         for note in notes:
@@ -112,7 +111,7 @@ def main():
                 print(cst.op, '=>', ast.edges)
                 print(ast)
 
-    if args.parse:
+    if args.parse_all:
         h1('PARSE')
         for note in notes:
             print()
@@ -120,6 +119,13 @@ def main():
             tree = parse.head(note.head, v=args.v)
             print(tree)
 
+    if args.parse:
+        print(parse.head(args.parse))
+
+    if args.get:
+        h1('GET')
+        note = N.get(args.get)
+        note.print()
 
 if __name__=='__main__':
     main()

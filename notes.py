@@ -107,7 +107,7 @@ def notify(file, lines):
     note = Note(head=head, body=body, file=file)
     return note
 
-def get_notes():
+def all_notes():
     return list(Note.notes.values())
 
 @typecheck
