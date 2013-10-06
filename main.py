@@ -71,7 +71,7 @@ def make_lines(block):
 
 def make_blocks(chars):
     blocks = [block.split('\n') for block in chars.split('\n\n')]
-    blocks = [make_lines(lines) for lines in blocks]
+    blocks = [make_lines(block) for block in blocks]
     return blocks
 
 def make_notes(files):
