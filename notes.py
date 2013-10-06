@@ -30,6 +30,9 @@ def is_note(s):
 def aliases(head):
     return head.split(' , ')
 
+def is_line(line):
+    return line.strip() and not is_div(line)
+
 def is_noun_phrase(line):
     pass
 
@@ -37,34 +40,17 @@ def is_verb_phrase(line):
     pass
 
 class Note:
-    """
-    """
-    notes = {} # the registry
+    notes = [] # the registry
 
     @typecheck
-    def __new__(cls, head: str, body: list, file:str = ''):
-        """
-        : singleton factory
+    def __new__(cls, head: str, body: list, file: str =''):
+        self = super().__new__(cls)
+        cls.notes.append(self)
 
-        : idempotent
-        i.e.
-        >>> data = {'head': 'head', 'body': ['body']}
-        >>> assert Note(**data) == Note(**data)
-        and Note must the same internally
-        """
-        body = [line.strip() for line in body if line.strip()]
-
-        if head in cls.notes:
-            note = cls.notes[head]
-            note.body = merge(note.body, body)
-        else:
-            note = super().__new__(cls)
-            note.head = head
-            note.body = body
-            cls.notes[head] = note
-
-        note.file = file
-        return note
+        self.head = head.strip()
+        self.file = file.strip()
+        self.body = [line.strip() for line in body if line.strip()]
+        return self
 
     def __iter__(self):
         yield 'head', self.head
@@ -94,21 +80,11 @@ class Note:
         return self.head
 
 def notify(file, lines):
-    """TODO parses text => creates Note => updates DB
-    """
+    """makes Notes"""
     if not lines: return
-
-    head = lines[0].strip()
-    body = lines[1:] if len(lines)>1 else []
-
-    if not head: return
-    if is_div(head): notify(file, body)
-
+    head, *body = lines
     note = Note(head=head, body=body, file=file)
     return note
-
-def all_notes():
-    return list(Note.notes.values())
 
 @typecheck
 def get(query: str) -> Note:

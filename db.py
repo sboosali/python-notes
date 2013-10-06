@@ -11,7 +11,7 @@ client = pymongo.MongoClient(host, port)
 database = client.notes
 collection = database.notes
 
-collection.create_index('head', unique=True)
+collection.create_index('head')#, unique=True)
 
 
 def stats():
@@ -25,6 +25,11 @@ def get(head: str) -> dict:
     """
     note = collection.find_one({'head':head}, {'_id':False})
     return note if note else {'head':head, 'body': []}
+
+def put(head, body):
+    return collection.update({'head': head},
+                             {'$pushAll': {'body': body}},
+                             upsert=True)
 
 @typecheck
 def upsert(head: str, body: list, file: str):

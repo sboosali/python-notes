@@ -8,6 +8,7 @@ import parse
 from parse import AST
 import db
 import notes as N
+import make
 
 
 def get_args():
@@ -56,9 +57,42 @@ def get_dropbox_notes():
     return files
 
 def write_notes_to_database(notes):
+    db.remove_collection() #TODO
     for note in notes:
         note.print()
-        db.upsert(**dict(note))
+        tree = parse.AST(parse.head(note.head))
+        if 'alias' in tree.edges:
+            make.alias(tree.nodes, note.body, note.file)
+        else:
+            db.upsert(**dict(note))
+
+def make_lines(block):
+    return [line.strip() for line in block if N.is_line(line)]
+
+def make_blocks(chars):
+    blocks = [block.split('\n') for block in chars.split('\n\n')]
+    blocks = [make_lines(lines) for lines in blocks]
+    return blocks
+
+def make_notes(files):
+    notes = []
+
+    for file in files:
+        chars = open(file).read()
+        blocks = make_blocks(chars)
+        notes.extend(filter(bool, (N.notify(file, line) for line in blocks)))
+
+    return notes
+
+def print_aliases(notes):
+    for note in notes:
+        cst = parse.head(note.head)
+        ast = AST(cst)
+        if 'alias' in ast.edges:
+            print()
+            print(note.head)
+            print(cst.op, '=>', ast.edges)
+            print(ast)
 
 def main():
     args = get_args()
@@ -68,21 +102,13 @@ def main():
         args.files = ['tests/test.note']
         args.head = True
         args.freqs = True
-        args.parse = True
+        args.parse_all = True
         args.write = True
         args.aliases = True
         args.get = 'leonard cohen'
 
     files = args.files if args.files else get_dropbox_notes()
-
-    for file in files:
-        chars = open(file).read()
-        blocks = chars.split('\n\n')
-        blocks = [block.split('\n') for block in blocks]
-        for lines in blocks:
-            N.notify(file, lines)
-
-    notes = N.all_notes()
+    notes = make_notes(files)
 
     if args.destroy:
         h1('DESTROY')
@@ -102,14 +128,7 @@ def main():
 
     if args.aliases:
         h1('ALIASES')
-        for note in notes:
-            cst = parse.head(note.head)
-            ast = AST(cst)
-            if 'alias' in ast.edges:
-                print()
-                print(note.head)
-                print(cst.op, '=>', ast.edges)
-                print(ast)
+        print_aliases(notes)
 
     if args.parse_all:
         h1('PARSE')

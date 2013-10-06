@@ -245,7 +245,21 @@ def unparse(tree):
 def note(lines):
     """TODO"""
 
+def body(line, head=''):
+    tokens = line.split()
+    prefix = head + get_max_spaces(line) if tokens[0] in config.operators else ''
+    return parse.head(prefix + line)
+
 class AST(list):
+    """
+    >>> import parse
+    >>> cst = parse.head('a , b')
+    >>> ast = AST(cst)
+    >>> assert ast.edges == ['alias']
+    >>> assert ast.nodes == ['a', 'b']
+    """
     def __init__(self, cst):
         super().__init__(cst)
+        self.nodes = [word for word in cst if word not in cst.op]
+        # e.g. [' , '] => ['alias']
         self.edges = flatten([config.meaning[sym] for sym in cst.op.syms])
