@@ -18,6 +18,8 @@ class Binop(list, Op):
     assert isinstance(Binop(['->','<-']), Binop)
     assert Binop('==') == ['==']
 
+    e.g. op == Binop(' , ')  is for syntax (grouping)
+    e.g. op.syms == [',']  is for semantics (the mapping)
     """
 
     def __init__(self, symbols, min_spaces=None):

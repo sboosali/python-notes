@@ -43,12 +43,12 @@ class Note:
     notes = [] # the registry
 
     @typecheck
-    def __new__(cls, head: str, body: list, file: str =''):
+    def __new__(cls, head: str, body: list, file: str = ''):
         self = super().__new__(cls)
         cls.notes.append(self)
 
         self.head = head.strip()
-        self.file = file.strip()
+        self.file = file
         self.body = [line.strip() for line in body if line.strip()]
         return self
 
@@ -84,15 +84,4 @@ def notify(file, lines):
     if not lines: return
     head, *body = lines
     note = Note(head=head, body=body, file=file)
-    return note
-
-@typecheck
-def get(query: str) -> Note:
-    """fuzzy search, where the fuzz are:
-    *TODO aliases
-    *TODO synonyms
-    *TODO typos
-    """
-    data = db.get(query)
-    note = Note(**data)
     return note

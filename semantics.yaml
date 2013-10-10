@@ -1,11 +1,26 @@
 meaning:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
- "," : alias
- +  : plus, more
- -> : causes
- <- : is_caused_by
- ~ : related
- ≈ : similar
+ # maps "operators" to "verbs"
+ ","  : alias
+ ":"  : is_a
+ +    : plus, more
+ ->   : causes
+ <-   : is_caused_by
+ ~    : related
+ ≈    : similar
+
+default_verb: edge
+
+chaining:
+ # e.g. left chaining
+ #  x , y , z
+ #  (x , y) , z
+ #  x , z
+ #  x
+ ","  : left
+ ":"  : left
+
+default_chain: right
 
 opposites:
 # or will you trip over your bootstraps into the rabbit hole of defining the properties of the semantics within the syntax itself?

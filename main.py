@@ -5,7 +5,6 @@ import os
 
 from util import *
 import parse
-from parse import AST
 import db
 import notes as N
 import make
@@ -57,14 +56,14 @@ def get_dropbox_notes():
     return files
 
 def write_notes_to_database(notes):
-    db.remove_collection() #TODO
+    db.collection.remove()
     for note in notes:
         note.print()
         tree = parse.AST(parse.head(note.head))
-        if 'alias' in tree.edges:
-            make.alias(tree.nodes, note.body, note.file)
+        if 'alias' in tree.verbs:
+            make.alias(tree.nouns, note.body, note.file)
         else:
-            db.upsert(**dict(note))
+            db.put(**dict(note))
 
 def make_lines(block):
     return [line.strip() for line in block if N.is_line(line)]
@@ -84,15 +83,30 @@ def make_notes(files):
 
     return notes
 
+def print_note(note: dict):
+    print()
+    print('[head]', note['head'])
+    for line in note['file']:
+        print('[file]', line)
+    for line in note['body']:
+        print('[body]', line)
+
 def print_aliases(notes):
     for note in notes:
         cst = parse.head(note.head)
-        ast = AST(cst)
-        if 'alias' in ast.edges:
+        ast = parse.AST(cst)
+        if 'alias' in ast.verbs:
             print()
             print(note.head)
-            print(cst.op, '=>', ast.edges)
+            print(cst.op, '=>', ast.verbs)
             print(ast)
+
+def print_heads(notes):
+    for note in notes:
+        cst = parse.head(note.head)
+        if len(cst)>1:
+            print()
+            print(cst)
 
 def main():
     args = get_args()
@@ -106,32 +120,33 @@ def main():
         args.write = True
         args.aliases = True
         args.get = 'leonard cohen'
+        db.collection = db.database.test
 
     files = args.files if args.files else get_dropbox_notes()
     notes = make_notes(files)
 
     if args.destroy:
-        h1('DESTROY')
-        print(db.remove_collection())
+        if args.test: h1('DESTROY')
+        print(db.collection.remove())
 
     if args.head:
-        h1('HEAD')
+        if args.test: h1('HEAD')
         print_heads(notes)
 
     if args.freqs:
-        h1('FREQS')
+        if args.test: h1('FREQS')
         print_first_token_frequencies(notes)
 
     if args.write:
-        h1('WRITE')
+        if args.test: h1('WRITE')
         write_notes_to_database(notes)
 
     if args.aliases:
-        h1('ALIASES')
+        if args.test: h1('ALIASES')
         print_aliases(notes)
 
     if args.parse_all:
-        h1('PARSE')
+        if args.test: h1('PARSE')
         for note in notes:
             print()
             print(note.head)
@@ -142,9 +157,9 @@ def main():
         print(parse.head(args.parse))
 
     if args.get:
-        h1('GET')
-        note = N.get(args.get)
-        note.print()
+        if args.test: h1('GET')
+        note = db.get(args.get)
+        print_note(note)
 
 if __name__=='__main__':
     main()

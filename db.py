@@ -11,7 +11,7 @@ client = pymongo.MongoClient(host, port)
 database = client.notes
 collection = database.notes
 
-collection.create_index('head')#, unique=True)
+collection.create_index('head')
 
 
 def stats():
@@ -19,28 +19,41 @@ def stats():
     return database.command('collstats', 'notes')
 
 @typecheck
-def get(head: str) -> dict:
-    """get a note by its head from the database if it exists
+def get(head: str):
+    """get a note by one of its heads from the database if it exists
     (exclude mongo's "_id")
     """
-    note = collection.find_one({'head':head}, {'_id':False})
-    return note if note else {'head':head, 'body': []}
+    select = {'head': {'$all': [head]}}
+    exclude = {'_id':False}
+    note = collection.find_one(select, exclude)
 
-def put(head, body):
-    return collection.update({'head': head},
-                             {'$pushAll': {'body': body}},
-                             upsert=True)
+    if note:
+        note['head'] = head
+    else:
+        note = {'head': head, 'body': [], 'file': []}
+    return note
+
+# @typecheck
+# def add(heads: list, body: list, file: list = ()):
+#     """add a note """
+#     select = {'head': {'$all': heads}}
+#     update = {'head': heads,
+#               'body': body,
+#               'file': file}
+#     collection.update(select, update, upsert=True)
+#     return collection.update(select, update, upsert=True, multi=True)
 
 @typecheck
-def upsert(head: str, body: list, file: str):
-    """syncs the database with the python Note class,
-    merging the bodies of notes who share heads.
-    """
-    old_note = get(head)
-    body = merge(old_note['body'], body)
-    new_note = dict(Note(head=head, body=body, file=file))
+def put(head: str, body: list, file: str = ''):
+    return puts([head], body, [file])
 
-    return collection.update({'head':head}, new_note, upsert=True)
+@typecheck
+def puts(heads: list, body: list, files: list = ()):
+    select = {'head': {'$all': heads}}
 
-def remove_collection():
-    return collection.remove()
+    update = {'$addToSet': {'head': {'$each': heads}}}
+    collection.update(select, update, upsert=True, multi=True)
+
+    update = {'$addToSet': {'file': {'$each': files}},
+              '$pushAll': {'body': body}}
+    collection.update(select, update, multi=True)

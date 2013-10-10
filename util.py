@@ -32,11 +32,6 @@ def stagger(xs, ys):
         zs.append(x)
     return zs
 
-def print_heads(notes):
-    for note in notes:
-        print()
-        print(note.head)
-
 def print_first_token_frequencies(notes):
 	counts = defaultdict(int)
 	for note in notes:

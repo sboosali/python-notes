@@ -7,6 +7,7 @@ from util import *
 from grammar import Op, Nulop, Binop, Ternop
 from grammar import OPERATORS
 import config
+import make
 
 
 def get_max_spaces(line):
@@ -251,15 +252,24 @@ def body(line, head=''):
     return parse.head(prefix + line)
 
 class AST(list):
-    """
-    >>> import parse
-    >>> cst = parse.head('a , b')
-    >>> ast = AST(cst)
-    >>> assert ast.edges == ['alias']
-    >>> assert ast.nodes == ['a', 'b']
-    """
-    def __init__(self, cst):
+    @typecheck
+    def __init__(self, cst: CST):
+        '''recursively create AST from CST
+        : infix notation => prefix notation
+        swaps the operator (e.g. "+") for a verb (e.g. either "more" or "plus")
+
+        >>> cst = head('x , y : z')
+        >>> ast = AST(cst)
+        >>> assert ast == ['is_a', ['alias', 'x', 'y'], 'z']
+        >>> assert ast.verbs == ['is_a']
+        >>> assert ast.nouns == [, 'z']
+        '''
         super().__init__(cst)
-        self.nodes = [word for word in cst if word not in cst.op]
-        # e.g. [' , '] => ['alias']
-        self.edges = flatten([config.meaning[sym] for sym in cst.op.syms])
+        # filter out verbs
+        self.nouns = [AST(noun) if isinstance(noun, CST) else noun
+                      for noun in cst
+                      if noun not in cst.op]
+        # e.g. (for "+ Dop") ['+'] => ['plus', 'more'] => {'more'}
+        self.verbs = {verb
+                      for sym in cst.op.syms
+                      for verb in config.meaning[sym]}
