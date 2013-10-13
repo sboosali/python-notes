@@ -4,22 +4,15 @@ import config
 
 class Op: pass
 
-class Nulop(tuple, Op):
-    syms = ['']
+class Nulop(Op): pass
 
 class Binop(list, Op):
-    """a list of binary operators that share the same precedence.
+    """a binary operator.
 
     if at the start of a phrase, a Binop acts as a unary operator.
     e.g. "piracetam -> + ACh" may be parsed as "['piracetam', '->', ['+', 'ACh']]" which may be interpreted as "piracetam causes more acetylcholine" (i.e. unary "+" may mean "more" while binary "+" means "plus")
 
-
-    assert isinstance(Binop(':='), Binop)
-    assert isinstance(Binop(['->','<-']), Binop)
-    assert Binop('==') == ['==']
-
-    e.g. op == Binop(' , ')  is for syntax (grouping)
-    e.g. op.syms == [',']  is for semantics (the mapping)
+    >>> assert Binop('==') == '=='
     """
 
     def __init__(self, symbols, min_spaces=None):
@@ -77,7 +70,7 @@ class Ternop(tuple, Op):
             self.min_spaces=config.min_spaces[self.syms[0]]
 
     @property
-    def syms(self) -> list:
+    def syms(self):
         """the config representation
 
         >>> assert Ternop(' < ', ' where ').syms == ['< where']
@@ -96,7 +89,6 @@ class Ternop(tuple, Op):
         r = ' '*n + r + ' '*n
         return Ternop(l, r, min_spaces=self.min_spaces)
 
-
 def is_binop(op):
     """
 
@@ -112,7 +104,7 @@ def is_binop(op):
 def is_ternop(op):
     return len(op.split())==2
 
-@as_list
+@strict
 def munge_syntax(syntax):
     """groups operators by precedence.
     the longer operators must come before the shorter ones,
@@ -138,6 +130,9 @@ INTERROGATIVES = 'who what where when why how'.split()
 #: [Op]
 OPERATORS = munge_syntax(config.syntax)
 assert has_no_duplicates(OPERATORS)
+#: [str]
+SYMBOLS = flatten(config.operators)
 
 if __name__=='__main__':
-    for operator in OPERATORS: print(operator)
+    for operator in OPERATORS:
+        print(operator)

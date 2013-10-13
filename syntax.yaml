@@ -1,5 +1,5 @@
 operators:
- # concrete syntax of operator-precedence grammar
+ # defines syntax for recursive-regex and/or operator-precedence grammar
  # in descending precedence
 
  - "[ ]"
@@ -11,9 +11,9 @@ operators:
 
  - :=
  - :-
+ - "="
  - ["<", ">"]
  - ":"
- - "="
  - "~"
  - v
 
@@ -30,13 +30,13 @@ operators:
  - ( )
 
  - ==
- - [+, -]
+ - ["+", "-"]
  - ["*", "/"]
  - ^
 
-default_min_spaces: 1
 
 min_spaces:
+ __default__: 1
 
  ( )   : 0
  "[ ]" : 0
@@ -48,7 +48,9 @@ min_spaces:
  /   : 0
  ^   : 0
 
+
 order:
+ # sort lines by operator to show note
 
  - :=
  - :-
@@ -73,15 +75,28 @@ order:
  - ==>
  - <==
 
-head_operators:
 
- - :=
- - :-
- - "="
- - "~"
+# e.g. left chaining
+#  x , y , z
+#  (x , y) , z
+#  x , z
+#  x
 
- - ":"
- - ["<", ">"]
+chain:
+ __default__: right
 
- - < where
- - ~ but
+ # head operators
+
+ ","     : left
+
+ :=      : left
+ :-      : left
+ "="     : left
+ "~"     : left
+
+ ":"     : left
+ "<"     : left
+ ">"     : left
+
+ < where : left
+ ~ but   : left

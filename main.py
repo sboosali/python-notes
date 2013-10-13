@@ -137,29 +137,31 @@ def main():
         if args.test: h1('FREQS')
         print_first_token_frequencies(notes)
 
-    if args.write:
-        if args.test: h1('WRITE')
-        write_notes_to_database(notes)
+    # if args.write:
+    #     if args.test: h1('WRITE')
+    #     write_notes_to_database(notes)
 
-    if args.aliases:
-        if args.test: h1('ALIASES')
-        print_aliases(notes)
+    # if args.aliases:
+    #     if args.test: h1('ALIASES')
+    #     print_aliases(notes)
 
     if args.parse_all:
         if args.test: h1('PARSE')
         for note in notes:
             print()
             print(note.head)
-            tree = parse.head(note.head, v=args.v)
+            tree = parse.head(note.head)
             print(tree)
 
     if args.parse:
-        print(parse.head(args.parse))
+        for parsed in parse._head(args.parse):
+            print(parsed)
 
     if args.get:
         if args.test: h1('GET')
         note = db.get(args.get)
         print_note(note)
+
 
 if __name__=='__main__':
     main()

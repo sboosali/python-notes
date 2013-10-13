@@ -1,6 +1,7 @@
 from collections import defaultdict
 import functools
 import inspect
+from multimethod import multimethod
 
 
 def h1(text):
@@ -8,21 +9,25 @@ def h1(text):
     print('----- %s ------' % text)
     print()
 
+def odd(x): return (x%2)==1
+
 def has_no_duplicates(l):
     return len(l) == len(set(l))
 
+@multimethod(object)
+def flatten(x): return [x]
+@multimethod(list)
 def flatten(l):
-    """eg [[1],[[2,[3]],[4]],5] => [1,2,3,4,5]
-
-    each case returns a flat list
-    """
-    if not isinstance(l, list): return [l]
-    if l==[]: return []
+    '''
+    >>> flatten([[1],[[2,[3]],[4]],5])
+    [1,2,3,4,5]
+    '''
+    if not l: return []
     return functools.reduce(lambda xs,ys: xs+ys, map(flatten, l))
 
 def stagger(xs, ys):
     """
-    stagger(['a','b','c'],[1,2]) == ['a',1,'b',2,'c']
+    stagger(['a','b','c'], [1,2]) == ['a', 1, 'b', 2, 'c']
     """
     xs = iter(xs)
     ys = iter(ys)
@@ -55,7 +60,6 @@ def merge(xs,ys):
 def merge_dicts(x:dict, y:dict):
     return dict(list(x.items()) + list(y.items()))
 
-
 def typecheck(f):
 
     def typechecked(*args, **kwargs):
@@ -82,21 +86,38 @@ def typecheck(f):
 
     return typechecked
 
+def strict(f):
+    '''turns an iterator into a function that returns a list.
 
-def as_list(f):
-    """ e.g.
+    >>> @strict
+    ... def f():
+    ...    """docstring"""
+    ...    yield 1
+    ...    yield 2
+    >>> assert f.__doc__ == 'docstring'
+    >>> assert f() == [1,2]
 
-    @as_list
-    def f():
-      \"\"\"docstring\"\"\"
-      yield 1
-      yield 2
-    assert f.__doc__ == 'docstring'
-    assert list(f()) == [1,2]
-
-    """
-    def casted_to_list(*args, **kwargs):
+    '''
+    def strict_f(*args, **kwargs):
         return list(f(*args, **kwargs))
-    casted_to_list.__name__ = f.__name__
-    casted_to_list.__doc__ = f.__doc__
-    return casted_to_list
+    strict_f.__name__ = f.__name__
+    strict_f.__doc__ = f.__doc__
+    return strict_f
+
+def memoize(f, cache=None):
+    if cache is None: cache = {}
+
+    def memoized(*args, **kwargs):
+        if args not in cache:
+            cache[args] = f(*args, **kwargs)
+        return cache[args]
+
+    memoized.__name__ = f.__name__
+    memoized.__doc__ = f.__doc__
+    memoized.__cache__ = cache
+    return memoized
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

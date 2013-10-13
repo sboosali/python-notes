@@ -1,17 +1,58 @@
-"""
+'''
 use "import parse" to document the parsing functions like so: "parse.head()"
-"""
+
+    : :infix => :prefix
+
+    x        => (node x)
+    x , y    => (aliases x y ...)
+    x ~ y    => (like x y ...)
+    x = y    => (equals x y ...)
+    x := y   => (define x y)
+    x < y    => (subset x y ...)
+    x : y    => (is_a x y)
+    x -> y   => (edge "->" x y ...)
+
+    x . y    => (conjunction x y ...)
+    x ... y  => (ellipses x y)
+    [x]      => (context x)
+    word. x  => (parser "word" x)
+    . x      => (comment x)
+
+>>> text = 'x , y , z : a = b'
+>>> line = text.split()
+
+>>> tree = _CST(line)
+>>> tree
+([' = '], [([' : '], [([' , '], ['x', ' , ', 'y', ' , ', 'z']), ' : ', 'a']), ' = ', 'b'])
+>>> unparse(tree) == text
+True
+
+>>> tree = AST(tree)
+>>> tree
+(['='], [([':'], [([','], [([','], ['x', 'y']), 'z']), 'a']), 'b'])
+TODO Op('==') == ['==']
+
+'''
+from operator import itemgetter
 import itertools
 import re
+from multimethod import multimethod
+from collections import OrderedDict
+
 from util import *
+import grammar
 from grammar import Op, Nulop, Binop, Ternop
-from grammar import OPERATORS
 import config
 import make
+from tree import Tree
+import chain
 
 
-def get_max_spaces(line):
-    """returns the maximum number of spaces in the line"""
+def get_max_spaces(line: str):
+    '''returns the maximum number of spaces in the line.
+
+    >>> assert get_max_spaces('  ') == 2
+    '''
     if ' ' in line:
         return max(len(list(xs))
                    for x,xs
@@ -21,37 +62,39 @@ def get_max_spaces(line):
         return 0
 
 def get_spacing(line, min_spaces=0):
-    """returns a generator counting down from `max_spaces` to `min_spaces`"""
+    '''returns a generator counting down from `max_spaces` to `min_spaces`'''
     max_spaces = max(get_max_spaces(line), min_spaces)
     spacing = reversed(range(min_spaces, 1+max_spaces))
     return spacing
 
-@as_list
+@strict
 def get_operators(operators, line):
-    """returns an operator of each precedence given the line to parse. 'precedence' means 'number of spaces', bounded below by the operator definition and bounded above by the number of spaces in the line.
-    """
+    '''returns an operator of each precedence given the line to parse. 'precedence' means 'number of spaces', bounded below by the operator definition and bounded above by the number of spaces in the line.
+
+    TODO test
+    '''
     for n_spaces in get_spacing(line):
         for operator in operators:
             if operator.min_spaces <= n_spaces:
                 yield operator.whiten(n_spaces)
 
 def get_regex_from_binop(op):
-    """binary operators (unlike multinary operators):
+    '''binary operators (unlike multinary operators):
     are chainable (e.g. 'x -> y -> z')
     can be on same line even if different (e.g. 'x => y ==> z')
 
-    >>> assert get_regex_from_binop(Binop(' => ')) == r'\ \=\>\ '
-    >>> assert get_regex_from_binop(Binop(['==>', '=>'])) == r'(\=\>|\=\=\>)'
+    >>> assert get_regex_from_binop(Binop(' => ')) == r'(\ \=\>\ )'
+    >>> assert get_regex_from_binop(Binop(['==>', '=>'])) == r'(\=\=\>|\=\>)'
 
-    """
+    '''
     return '(%s)' % '|'.join(map(re.escape, op))
 
 def get_regex_from_ternop(op):
-    """
+    '''
 
     >>> assert get_regex_from_ternop(Ternop(' < ', ' where ')) == r'((?P<A>.*)\ \<\ (?P<B>.*)\ where\ (?P<C>.*))'
 
-    """
+    '''
     operators = map(re.escape, op)
     operands = {'A': r'(?P<A>.*)',
                 'B': r'(?P<B>.*)',
@@ -62,20 +105,49 @@ def get_regex_from_ternop(op):
 
 
 class CST(list):
-    """concrete syntax tree"""
-    @typecheck
-    def __init__(self, op: Op, tree: list):
+    '''concrete syntax tree'''
+
+#    @multimethod(list)
+    def __init__(self, op, tree):
         super().__init__(tree)
         self.op = op
 
+    # @multimethod(str)
+    # def __init__(self, line):
+    #     '''parse via recursive regex, into a concrete syntax tree.
+
+    #     `v` = verbose option to print each step
+
+    #     >>> line = 'a -> b , c , d -> e'
+    #     >>> cst = _CST(line)
+    #     >>> cst
+    #     ['a', ' -> ', ['b', ' , ', 'c', ' , ', 'd'], ' -> ', 'e']
+    #     '''
+
+    #     # e.g. = [Binop(['<', '>']), Ternop('<', 'where')]
+    #     operators = get_operators(grammar.OPERATORS, line)
+
+    #     tree = line
+    #     for operator in operators:
+    #         if v: print('', tree, operator, sep='\n')
+    #         # each pass may or may not 'deepen' the tree
+    #         if isinstance(tree, str):
+    #             tree = parse_op(operator, tree)
+    #         elif isinstance(tree, CST):
+    #             tree = tree.map(lambda line: parse_op(operator, line))
+    #         else:
+    #             assert False
+
+    #     # nothing parsed
+    #     if isinstance(tree, str): tree = CST(Nulop(), [tree])
+
+    #     return tree
+
     def map(self, f):
-        """maps a function onto each leaf (i.e. token or unparsed line) of the CST.
+        '''maps a function onto each leaf (i.e. token or unparsed line) of the CST.
         `t` is either a leaf or a subtree
         CST : functor
-
-        >>> assert Tree([Tree([1]), Tree([2,3,Tree([4])]), 5]).map(lambda x: x+1) == [[2], [3,4,[5]], 6]
-
-        """
+        '''
         op = self.op
         tree = [f(t)
                 if not isinstance(t, CST)
@@ -83,16 +155,25 @@ class CST(list):
                 for t in self]
         return CST(op, tree)
 
+    def unparse(self):
+        '''
+        >>> line = '3   =   1+2 * 3+4   /   7'
+        >>> assert _CST(line).unparse() == line
+        '''
+        return ''.join(flatten(self))
+
 class Sym(str):
     def __getattribute__(self, attr):
-        """transparently return a Sym for any str method call that returns a str.
+        '''transparently return a Sym for any str method call that returns a str.
 
         the line (regex) parsers wrap operators in Sym's, and the tree (recursive) parsers skip Sym's (meaning, "already parsed").
 
-        >>> assert isinstance(Sym('Sym').strip(), Sym)
-        >>> assert isinstance(Sym('Sym').split(), list)
+        >>> isinstance(Sym('Sym').strip(), Sym)
+        True
+        >>> isinstance(Sym('Sym').split(), list)
+        True
+        '''
 
-        """
         attr = super().__getattribute__(attr)
         if hasattr(attr, '__call__'):
             def symbolize(*args, **kwargs):
@@ -104,15 +185,17 @@ class Sym(str):
             return attr
 
 def parse_binop(op, line) -> 'str | CST str':
-    """
+    '''parses a line with a binary operator.
+
     wraps the operator(s) in Sym to say "this token has been parsed as a symbol of some operator, don't reparse it".
 
     cleans the output
     e.g. ['1 ', ' + ', ' 2'] => ['1',Sym('+'),'2']
 
-    >>> assert parse_binop(Binop('->'), 'x -> y -> z') == CST(['->'], ['x ', '->', ' y ', '->', ' z'])
+    >>> op = Binop('->')
+    >>> assert parse_binop(op, 'x -> y -> z') == CST(op, ['x ', '->', ' y ', '->', ' z'])
 
-    """
+    '''
     regex = get_regex_from_binop(op)
     tree = re.split(regex, line)
 
@@ -128,7 +211,8 @@ def parse_binop(op, line) -> 'str | CST str':
         return line
 
 def parse_ternop(op, line) -> 'str | CST str':
-    """
+    '''parses a line with a ternary operator.
+
     filter away empty matches
     e.g. '[head]' =match=> ['', '[', 'head', ']', ''] =filter=> ['[', 'head', ']']
 
@@ -137,9 +221,11 @@ def parse_ternop(op, line) -> 'str | CST str':
     cleans the output
     e.g. ['', ' [ ', 'head', ' ] ', ''] => ['[', 'head', ']']
 
-    >>> assert parse_ternop(Ternop('~', 'but'), 'x ~ y but z') == CST(('~', 'but'), ['x ', '~', ' y ', 'but', ' z'])
+    >>> op = Ternop('~', 'but')
+    >>> parse_ternop(op, 'x ~ y but z') == CST(op, ['x ', '~', ' y ', 'but', ' z'])
+    True
 
-    """
+    '''
     regex = get_regex_from_ternop(op)
     match = re.search(regex, line)
     if match:
@@ -159,22 +245,23 @@ def parse_ternop(op, line) -> 'str | CST str':
     else:
         return line
 
-
 @typecheck
-def _head(op: Op, line: str): # -> 'str | CST str':
-    """tries to match a list of ops to a line,
+def parse_op(op: Op, line: str): # -> 'str | CST str':
+    '''parses a line with some operator.
+
+    tries to match a list of ops to a line,
     returning a Tree if it can match and
     the line itself if it can't match.
 
     one step of a top-down operator-precedence parse.
 
-    >>> assert _head(Binop(['-']), '1+2') == '1+2'
-    >>> assert _head(Binop([' + ']), '1+2') == '1+2'
-    >>> assert _head(Binop(['+']), '1+2') == ['1','+','2']
-    >>> assert _head(Binop(['+', '-']), '1+2-3') == ['1','+','2','-','3']
-    >>> assert _head(Ternop(' ? ', ' : '), 'cond ? then : else') == ['cond', ' ? ', 'then', ' : ', 'else']
+    >>> assert parse_op(Binop(['-']), '1+2') == '1+2'
+    >>> assert parse_op(Binop([' + ']), '1+2') == '1+2'
+    >>> assert parse_op(Binop(['+']), '1+2') == ['1','+','2']
+    >>> assert parse_op(Binop(['+', '-']), '1+2-3') == ['1','+','2','-','3']
+    >>> assert parse_op(Ternop(' ? ', ' : '), 'cond ? then : else') == ['cond', ' ? ', 'then', ' : ', 'else']
 
-    """
+    '''
 
     if isinstance(line, Sym):
         # already parsed
@@ -188,44 +275,27 @@ def _head(op: Op, line: str): # -> 'str | CST str':
 
     return line
 
-@typecheck
-def head(line: str, v=False) -> CST:
-    """
-    parses a head step-by-step.
-    returns the parse tree.
+def _CST(line: str, v=False) -> CST:
+    '''parse via recursive regex, into a concrete syntax tree.
 
     `v` = verbose option to print each step
 
-    : :infix => :prefix
-
-    x        => (node x)
-    x , y    => (aliases x y ...)
-    x ~ y    => (like x y ...)
-    x = y    => (equals x y ...)
-    x := y   => (define x y)
-    x < y    => (subset x y ...)
-    x : y    => (is_a x y)
-    x -> y   => (edge "->" x y ...)
-
-    x . y    => (conjunction x y ...)
-    x ... y  => (ellipses x y)
-    [x]      => (context x)
-    word. x  => (parser "word" x)
-    . x      => (comment x)
-
-    """
+    >>> line = 'a -> b , c , d -> e'
+    >>> _CST(line)
+    ['a', ' -> ', ['b', ' , ', 'c', ' , ', 'd'], ' -> ', 'e']
+    '''
 
     # e.g. = [Binop(['<', '>']), Ternop('<', 'where')]
-    operators = get_operators(OPERATORS, line)
+    operators = get_operators(grammar.OPERATORS, line)
 
     tree = line
     for operator in operators:
         if v: print('', tree, operator, sep='\n')
         # each pass may or may not 'deepen' the tree
         if isinstance(tree, str):
-            tree = _head(operator, tree)
+            tree = parse_op(operator, tree)
         elif isinstance(tree, CST):
-            tree = tree.map(lambda line: _head(operator, line))
+            tree = tree.map(lambda line: parse_op(operator, line))
         else:
             assert False
 
@@ -234,42 +304,68 @@ def head(line: str, v=False) -> CST:
 
     return tree
 
-def unparse(tree):
-    """
+@multimethod(str)
+def _AST(s): return s
 
-    >>> line = '3   =   1+2 * 3+4   /   7'
-    >>> assert parse.unparse(parse.head(line)) == line
+@multimethod(CST)
+def _AST(cst):
+    value = cst.op
+    trees = [_AST(tree) for tree in cst]
+    return Tree((value, trees))
 
-    """
-    return ''.join(flatten(tree))
+def AST(tree):
+    '''
 
-def note(lines):
-    """TODO"""
+    >>> tree = ['a', ' -> ', ['b', ' , ', 'c', ' , ', 'd'], ' -> ', 'e']
+    >>> AST(tree)
+    (Op('->'), ['a', (Op(','), ['b', 'c', 'd']), 'e'])
+    '''
+    @multimethod(str)
+    def strip(s): return s.strip()
+    @multimethod(object)
+    def strip(o): return o
+
+    @multimethod(Sym)
+    def is_noun(_): return False
+    @multimethod(object)
+    def is_noun(_): return True
+
+    tree = _AST(tree)
+    tree = tree.map(strip)
+    tree = tree.filter(is_noun)
+    return tree
+
+def Graph(tree):
+    f = memoize(chain.reduce, cache=OrderedDict())
+    tree.fold(f)
+
+    graph = [(verb,) + (nouns) for ((verb, nouns), _) in f.__cache__.items()]
+    edges = [edge for edge in graph if len(edge)>1]
+    nodes = [node for (node, *_) in graph if not _]
+    return nodes, edges
+
+def _head(line):
+    cst = _CST(line)
+    ast = AST(cst)
+    nodes, edges = Graph(ast)
+    return line, cst, ast, nodes, edges
+
+@typecheck
+def head(line: str) -> list:
+    line, cst, ast, nodes, edges = _head(line)
+    return edges
 
 def body(line, head=''):
     tokens = line.split()
-    prefix = head + get_max_spaces(line) if tokens[0] in config.operators else ''
-    return parse.head(prefix + line)
+    starts_with_op = tokens[0] in config.operators
+    prefix = head + get_max_spaces(line) if starts_with_op else ''
+    line = prefix + line
+    return parse.head(line)
 
-class AST(list):
-    @typecheck
-    def __init__(self, cst: CST):
-        '''recursively create AST from CST
-        : infix notation => prefix notation
-        swaps the operator (e.g. "+") for a verb (e.g. either "more" or "plus")
+def note(lines):
+    '''TODO'''
 
-        >>> cst = head('x , y : z')
-        >>> ast = AST(cst)
-        >>> assert ast == ['is_a', ['alias', 'x', 'y'], 'z']
-        >>> assert ast.verbs == ['is_a']
-        >>> assert ast.nouns == [, 'z']
-        '''
-        super().__init__(cst)
-        # filter out verbs
-        self.nouns = [AST(noun) if isinstance(noun, CST) else noun
-                      for noun in cst
-                      if noun not in cst.op]
-        # e.g. (for "+ Dop") ['+'] => ['plus', 'more'] => {'more'}
-        self.verbs = {verb
-                      for sym in cst.op.syms
-                      for verb in config.meaning[sym]}
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
