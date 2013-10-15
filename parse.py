@@ -42,7 +42,7 @@ from collections import namedtuple
 
 from util import *
 import grammar
-from grammar import Op, Nulop, Unop, Binop, Ternop
+from grammar import Op, Nulop, Unop, Narop, Binop, Ternop
 import config
 import make
 from tree import Tree
@@ -257,7 +257,7 @@ def parse_op(op: Op, line: str): # -> 'str | CST str':
         # already parsed
         return line
 
-    if isinstance(op, Binop):
+    if isinstance(op, Binop) or isinstance(op, Narop):
         return parse_binop(op, line)
 
     if isinstance(op, Ternop):
@@ -283,7 +283,7 @@ def associate(line: str) -> Tree:
         elif isinstance(tree, list):
             tree = tree.map(f=lambda line: parse_op(operator, line)) # g=lambda _: not _)
         else:
-            assert False
+            raise PatternExhausted
 
     if not isinstance(tree, CST):
         tree = CST(Nulop(), [tree])
@@ -381,6 +381,7 @@ def body(line, head='') -> Parsed:
 
 def note(lines):
     '''TODO'''
+
 
 if __name__ == "__main__":
     import doctest

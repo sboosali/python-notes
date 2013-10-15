@@ -117,6 +117,7 @@ def memoize(f, cache=None):
     memoized.__cache__ = cache
     return memoized
 
+class PatternExhausted(Exception): pass
 
 if __name__ == "__main__":
     import doctest

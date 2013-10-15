@@ -12,9 +12,8 @@ class Op(tuple):
         return ' '.join(_.strip() for _ in self)
 
 class Nulop(Op):
-    def __new__(cls):
-        return super().__new__(cls)
-
+    '''the nullary operator.
+    '''
     def __repr__(self):
         return 'Nulop()'
 
@@ -22,7 +21,7 @@ class Unop(Op):
     '''a unary operator.
     '''
     def __new__(cls, symbol):
-        return super().__new__(cls, symbol)
+        return super().__new__(cls, (symbol,))
 
     def __repr__(self):
         return 'Unop(%r)' % self
@@ -52,6 +51,27 @@ class Binop(Op):
         ops = [' '*n + op + ' '*n for op in self]
         return Binop(*ops)
 
+class Narop(Op):
+    '''an n-ary operator. like binary, is chainable. unlike binary, it is not left-associated, so the 2+ operands are all passed to the verb.
+    '''
+    def __new__(cls, symbol):
+        return super().__new__(cls, symbol)
+
+    def __init__(self, symbol):
+        self.min_spaces = config.min_spaces[self.symbol]
+
+    def __repr__(self):
+        op, = self
+        return 'Narop(%r)' % op
+
+    def whiten(self, n):
+        """decrease precedence of operator by adding `n` spaces.
+
+        >>> assert Narop('->').whiten(1) == Narop(' -> ')
+        """
+        op, = self
+        return Narop(' '*n + op + ' '*n)
+
 class Ternop(Op):
     '''a ternary operator.'''
     def __new__(cls, l, r):
@@ -75,19 +95,28 @@ class Ternop(Op):
         return Ternop(l, r)
 
 def is_binop(op):
-    """
-
+    '''
     >>> assert is_binop('->')
-    >>> assert is_binop(['->', '<-'])
-
-    """
+    >>> assert is_binop(['=>', '==>'])
+    '''
     if isinstance(op, str):
         return len(op.split())==1
     if isinstance(op, list):
-        return all(map(is_binop, op))
+        return True
+
+def is_narop(op):
+    '''
+    >>> assert is_narop(['.', '.'])
+    '''
+    if isinstance(op, list):
+        return len(op)==2 and op[0]==op[1]
 
 def is_ternop(op):
-    return len(op.split())==2
+    '''
+    >>> assert is_ternop('< where')
+    '''
+    if isinstance(op, str):
+        return len(op.split())==2
 
 def munge_operator(operator: 'str|list') -> Op:
     '''
@@ -96,15 +125,22 @@ def munge_operator(operator: 'str|list') -> Op:
     for regexes like "( ==> | => )" to work right.
     '''
 
-    if is_binop(operator):
+    if is_narop(operator):
+        operator, _ = operator
+        return Narop(operator)
+
+    elif is_binop(operator):
         if isinstance(operator, str):
             return Binop(operator)
-        else:
+        if isinstance(operator, list):
             return Binop(*operator)
 
     elif is_ternop(operator):
         l, r = operator.split()
         return Ternop(l,r)
+
+    else:
+        raise PatternExhausted
 
 CHARS = '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '-/._' + '#$%^'
 

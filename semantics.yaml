@@ -1,15 +1,22 @@
 verbs:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
  # maps "operators" to "verbs"
- ","  : alias
- ":"  : is_a
- +    : plus, more
- ->   : causes
- <-   : is_caused_by
- ~    : related
- ≈    : similar
- .    : and
- /    : and
+ ""      : text
+ ~       : edge
+ ","     : alias
+ ":"     : is_a
+ "<"     : subset
+ +       : plus # [plus, more]
+ ->      : causes
+ <-      : is_caused_by
+ ==>     : becomes
+ <==     : comes_from
+ =>      : goes_to
+ <=      : went_from
+ ≈       : similar
+ .       : and
+ /       : and
+ < where : subset_where
 
 default_verb: edge
 

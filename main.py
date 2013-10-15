@@ -86,11 +86,11 @@ def write_notes_to_database(notes):
 
 def print_heads(notes):
     for note in notes:
-        print(note.head)
         head, line, cst, ast, nodes, edges, verbs = parse.head(note.head)
         print()
         print(line)
         print(verbs)
+    print()
 
 def print_parse(parsed):
     print()
