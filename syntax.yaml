@@ -100,3 +100,6 @@ chain:
 
  < where : left
  ~ but   : left
+
+ "+"     : join
+ .       : join

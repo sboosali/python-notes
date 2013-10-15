@@ -2,81 +2,66 @@ from util import *
 import config
 
 
-class Op: pass
+class Op(tuple):
+    def __new__(cls, *xs):
+        return super().__new__(cls, xs)
+    def strip(self):
+        return self.__class__(*[_.strip() for _ in self])
+    @property
+    def symbol(self) -> str:
+        return ' '.join(_.strip() for _ in self)
 
-class Nulop(Op): pass
+class Nulop(Op):
+    def __new__(cls):
+        return super().__new__(cls)
 
-class Binop(list, Op):
-    """a binary operator.
+    def __repr__(self):
+        return 'Nulop()'
+
+class Unop(Op):
+    '''a unary operator.
+    '''
+    def __new__(cls, symbol):
+        return super().__new__(cls, symbol)
+
+    def __repr__(self):
+        return 'Unop(%r)' % self
+
+class Binop(Op):
+    '''a binary operator. each symbol shares the same precedence.
 
     if at the start of a phrase, a Binop acts as a unary operator.
     e.g. "piracetam -> + ACh" may be parsed as "['piracetam', '->', ['+', 'ACh']]" which may be interpreted as "piracetam causes more acetylcholine" (i.e. unary "+" may mean "more" while binary "+" means "plus")
+    '''
 
-    >>> assert Binop('==') == '=='
-    """
+    def __new__(cls, *symbols):
+        symbols = sorted(symbols, key=len, reverse=True)
+        return tuple.__new__(cls, symbols)
 
-    def __init__(self, symbols, min_spaces=None):
-        assert is_binop(symbols)
+    def __init__(self, *symbols):
+        self.min_spaces = min(config.min_spaces[_] for _ in self)
 
-        if isinstance(symbols, str):
-            self.ops = [symbols]
-        if isinstance(symbols, list):
-            self.ops = sorted(symbols, key=len, reverse=True)
-
-        if min_spaces is not None:
-            self.min_spaces = min_spaces
-        else:
-            self.min_spaces = min(config.min_spaces[op] for op in self.syms)
-
-        super().__init__(self.ops)
-
-    def __hash__(self):
-        return hash(' '.join(self))
-
-    @property
-    def syms(self) -> list:
-        """the symbol(s) of the config representation
-
-        >>> assert Binop([' -> ', ' <- ']).syms == ['->', '<-']
-
-        """
-        return [sym.strip() for sym in self.ops]
+    def __repr__(self):
+        return 'Binop%r' % (tuple(self),)
 
     def whiten(self, n):
-        """decrease precedence of operator by adding spaces.
+        """decrease precedence of operator by adding `n` spaces.
 
-        >>> assert whiten(Binop('->'), 1) == [' -> ']
-        >>> assert whiten(Binop(['->', '<-']), 1) == [' -> ', ' <- ']
-
+        >>> assert Binop('->').whiten(1) == Binop(' -> ')
         """
-        op = [' '*n + sym + ' '*n for sym in self.ops]
-        return Binop(op, min_spaces=self.min_spaces)
+        ops = [' '*n + op + ' '*n for op in self]
+        return Binop(*ops)
 
-class Ternop(tuple, Op):
-    """a ternary operator.
+class Ternop(Op):
+    '''a ternary operator.'''
+    def __new__(cls, l, r):
+        return tuple.__new__(cls, (l, r))
 
-    assert isinstance(Ternop('<', 'where'), Ternop)
-    assert Ternop('~', 'but') == ('~', 'but')
+    def __init__(self, l, r):
+        self.min_spaces = config.min_spaces[self.symbol]
 
-    """
-    def __new__(cls, l, r, **kwargs):
-        assert is_ternop(l + ' ' + r)
-        return super().__new__(cls, (l, r))
-
-    def __init__(self, l, r, min_spaces=None):
-        if min_spaces is not None:
-            self.min_spaces = min_spaces
-        else:
-            self.min_spaces=config.min_spaces[self.syms[0]]
-
-    @property
-    def syms(self):
-        """the config representation
-
-        >>> assert Ternop(' < ', ' where ').syms == ['< where']
-
-        """
-        return [' '.join(sym.strip() for sym in self)]
+    def __repr__(self):
+        return 'Ternop(%r, %r)' % self
 
     def whiten(self, n):
         """decrease precedence of operator by adding spaces.
@@ -87,7 +72,7 @@ class Ternop(tuple, Op):
         l, r = self
         l = ' '*n + l + ' '*n
         r = ' '*n + r + ' '*n
-        return Ternop(l, r, min_spaces=self.min_spaces)
+        return Ternop(l, r)
 
 def is_binop(op):
     """
@@ -104,21 +89,22 @@ def is_binop(op):
 def is_ternop(op):
     return len(op.split())==2
 
-@strict
-def munge_syntax(syntax):
-    """groups operators by precedence.
+def munge_operator(operator: 'str|list') -> Op:
+    '''
+    groups operators by precedence:
     the longer operators must come before the shorter ones,
     for regexes like "( ==> | => )" to work right.
-    """
+    '''
 
-    for symbols in syntax['operators']:
+    if is_binop(operator):
+        if isinstance(operator, str):
+            return Binop(operator)
+        else:
+            return Binop(*operator)
 
-        if is_binop(symbols):
-            yield Binop(symbols)
-
-        elif is_ternop(symbols):
-            l, r = symbols.split()
-            yield Ternop(l,r)
+    elif is_ternop(operator):
+        l, r = operator.split()
+        return Ternop(l,r)
 
 CHARS = '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '-/._' + '#$%^'
 
@@ -128,7 +114,7 @@ CONNECTIVES = 'and or not but while'.split()
 INTERROGATIVES = 'who what where when why how'.split()
 
 #: [Op]
-OPERATORS = munge_syntax(config.syntax)
+OPERATORS = [munge_operator(op) for op in config.operators]
 assert has_no_duplicates(OPERATORS)
 #: [str]
 SYMBOLS = flatten(config.operators)
@@ -136,3 +122,4 @@ SYMBOLS = flatten(config.operators)
 if __name__=='__main__':
     for operator in OPERATORS:
         print(operator)
+    print(SYMBOLS)

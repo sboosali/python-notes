@@ -52,7 +52,7 @@ def print_first_token_frequencies(notes):
 
 def merge(xs,ys):
     """merge two iterables, that may have duplicates,
-    #TODO while preserving order.
+    TODO while preserving order.
     """
     xs = list(set(xs + ys))
     return xs

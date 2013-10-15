@@ -16,3 +16,8 @@ min_spaces = defaultdict(lambda: default_min_spaces, syntax['min_spaces'])
 
 default_chain = syntax['chain'].pop('__default__')
 chain = defaultdict(lambda: default_chain, syntax['chain'])
+
+
+semantics = yaml.load(open('semantics.yaml'))
+default_verb = semantics['default_verb']
+verbs = defaultdict(lambda: default_verb, semantics['verbs'])

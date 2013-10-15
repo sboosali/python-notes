@@ -1,4 +1,4 @@
-meaning:
+verbs:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
  # maps "operators" to "verbs"
  ","  : alias
@@ -8,6 +8,8 @@ meaning:
  <-   : is_caused_by
  ~    : related
  ≈    : similar
+ .    : and
+ /    : and
 
 default_verb: edge
 

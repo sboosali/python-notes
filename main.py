@@ -55,16 +55,6 @@ def get_dropbox_notes():
     files += [os.path.expanduser('~/Dropbox/.note')]
     return files
 
-def write_notes_to_database(notes):
-    db.collection.remove()
-    for note in notes:
-        note.print()
-        tree = parse.AST(parse.head(note.head))
-        if 'alias' in tree.verbs:
-            make.alias(tree.nouns, note.body, note.file)
-        else:
-            db.put(**dict(note))
-
 def make_lines(block):
     return [line.strip() for line in block if N.is_line(line)]
 
@@ -91,22 +81,23 @@ def print_note(note: dict):
     for line in note['body']:
         print('[body]', line)
 
-def print_aliases(notes):
-    for note in notes:
-        cst = parse.head(note.head)
-        ast = parse.AST(cst)
-        if 'alias' in ast.verbs:
-            print()
-            print(note.head)
-            print(cst.op, '=>', ast.verbs)
-            print(ast)
+def write_notes_to_database(notes):
+    pass
 
 def print_heads(notes):
     for note in notes:
-        cst = parse.head(note.head)
-        if len(cst)>1:
-            print()
-            print(cst)
+        print(note.head)
+        head, line, cst, ast, nodes, edges, verbs = parse.head(note.head)
+        print()
+        print(line)
+        print(verbs)
+
+def print_parse(parsed):
+    print()
+    for key, val in parsed._asdict().items():
+        print('|')
+        print('| %s:\t%s' % (key,val))
+    print()
 
 def main():
     args = get_args()
@@ -137,25 +128,17 @@ def main():
         if args.test: h1('FREQS')
         print_first_token_frequencies(notes)
 
-    # if args.write:
-    #     if args.test: h1('WRITE')
-    #     write_notes_to_database(notes)
-
-    # if args.aliases:
-    #     if args.test: h1('ALIASES')
-    #     print_aliases(notes)
+    if args.write:
+        if args.test: h1('WRITE')
+        write_notes_to_database(notes)
 
     if args.parse_all:
         if args.test: h1('PARSE')
         for note in notes:
-            print()
-            print(note.head)
-            tree = parse.head(note.head)
-            print(tree)
+            print_parse(parse.head(note.head))
 
     if args.parse:
-        for parsed in parse._head(args.parse):
-            print(parsed)
+        print_parse(parse.head(args.parse))
 
     if args.get:
         if args.test: h1('GET')

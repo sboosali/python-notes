@@ -20,17 +20,6 @@ class Tree(tuple):
 
         return super().__new__(cls, (value, trees))
 
-    # def __str__(self):
-    #     '''show leaves nicely
-    #     >>> Tree('x') == ('x', [])
-    #     True
-    #     >>> str(Tree('x'))
-    #     'x'
-    #     '''
-    #     value, trees = self
-    #     #TODO descend
-    #     return str((value, trees)) if trees else str(value)
-
     @strict
     def preorder(self):
         '''pre-order traversal'''
@@ -64,16 +53,16 @@ class Tree(tuple):
                     yield v
 
     def leaves(self):
-        '''return just the leaves, with the same structure'''
+        '''return just the leaves, with the tree's structure'''
         value, trees = self
         lists = [Tree((v, t)).leaves() if t else v for (v, t) in trees]
         return lists
 
-    def map(self: 'Tree α', f: 'α -> β') -> 'Tree β':
+    def map(self: 'Tree α', f: 'α -> β', g=lambda _: True) -> 'Tree β':
         value, trees = self
 
-        trees = [tree.map(f) for tree in trees]
-        value = f(value)
+        trees = [tree.map(f, g) for tree in trees]
+        value = f(value) if g(trees) else value
 
         return Tree((value, trees))
 
@@ -85,11 +74,13 @@ class Tree(tuple):
 
         return value
 
-    def filter(self: 'Tree α', f: 'α -> bool') -> 'Tree α':
-        '''skips root -> always returns Tree'''
+    def filter(self: 'Tree α', f: 'α -> bool', g=lambda _: False) -> 'Tree α':
+        '''skips root -> always returns Tree
+        whenever `g` is true on the trees, ignore `f` on the value.
+        '''
         value, trees = self
 
-        trees = tuple(tree.filter(f) for tree in trees if f(tree[0]))
+        trees = tuple(Tree((v,ts)).filter(f) for (v,ts) in trees if g(ts) or f(v))
 
         return Tree((value, trees))
 
