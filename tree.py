@@ -20,6 +20,20 @@ class Tree(tuple):
 
         return super().__new__(cls, (value, trees))
 
+    def repr(self):
+        '''nicens leaves and puts brackets around children.
+        i.e. ('leaf', ()) => 'leaf'
+        i.e. ('value', ('leaf')) => ('value', ['leaf'])
+        '''
+        value, trees = self
+        if not trees:
+            return value
+        else:
+            return (value, [tree.repr() for tree in trees])
+
+    def __repr__(self):
+        return 'Tree(%r)' % (self.repr(),)
+
     @strict
     def preorder(self):
         '''pre-order traversal'''
@@ -52,6 +66,10 @@ class Tree(tuple):
                 for v in t.inorder():
                     yield v
 
+    def is_leaf(self):
+        value, trees = self
+        return not trees
+
     def leaves(self):
         '''return just the leaves, with the tree's structure'''
         value, trees = self
@@ -65,6 +83,14 @@ class Tree(tuple):
         value = f(value) if g(trees) else value
 
         return Tree((value, trees))
+
+    def tmap(self, f):
+        '''can 'grow' a tree by turning leaves into branches'''
+        value, trees = self
+        if not trees:
+            return f(self)
+        else:
+            return Tree((value, [tree.tmap(f) for tree in trees]))
 
     def fold(self: 'Tree α', f: 'α, [α] -> α') -> 'α':
         value, trees = self
@@ -187,23 +213,23 @@ if __name__=='__main__':
     assert ast.inorder() == ['a', '->', 'b', ',', 'c', ',', 'd', '->', 'e']
 
 
-    print()
-    print('Binary Tree')
+    # print()
+    # print('Binary Tree')
     binary_tree = Tree(('->', [('->', ['a', (',', [(',', ['b', 'c']), 'd'])]), 'e']))
     nodes, edges = Graph(binary_tree, f)
-    print(ast)
-    print(nodes)
-    print(edges)
+    # print(ast)
+    # print(nodes)
+    # print(edges)
     assert nodes == ['a', 'b', 'c', 'd', 'e']
     assert edges == [(',', 'b', 'c'), (',', 'b', 'd'), ('->', 'a', 'b'), ('->', 'b', 'e')]
 
-    print()
-    print('n-ary Tree')
+    # print()
+    # print('n-ary Tree')
     nary_tree = Tree(('->', ['a', (',', ['b', 'c', 'd']), 'e']))
     nodes, edges = Graph(nary_tree, f)
-    print(ast)
-    print(nodes)
-    print(edges)
+    # print(ast)
+    # print(nodes)
+    # print(edges)
     assert nodes == ['a', 'b', 'c', 'd', 'e']
     assert edges == [(',', 'b', 'c', 'd'), ('->', 'a', 'b', 'e')]
 
@@ -212,3 +238,5 @@ if __name__=='__main__':
     tree = Tree(('=', [(':', [(',', [(',', ['x', 'y']), 'z']), 'a']), 'b']))
     nodes, edges = Graph(tree, left)
     assert edges == [(',', 'x', 'y'), (',', 'x', 'z'), (':', 'x', 'a'), ('=', 'x', 'b')]
+
+    print(tree)
