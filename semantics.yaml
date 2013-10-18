@@ -2,23 +2,36 @@ verbs:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
  # maps "operators" to "verbs"
  ""      : text
+
+ =       : equals
+ :=      : defined_as
  ~       : edge
- ","     : alias
  ":"     : is_a
  "<"     : subset
+ ≈       : similar
+ < where : subset_where
+
  +       : plus # [plus, more]
+ "-"     : minus
+ "*"     : times
+ /       : divide
+
  ->      : causes
  <-      : is_caused_by
  ==>     : becomes
  <==     : comes_from
  =>      : goes_to
  <=      : went_from
- ≈       : similar
+
  .       : and
- /       : and
- < where : subset_where
+ ","     : alias
+
+
+ url: url
+ word: word
 
 default_verb: edge
+
 
 chaining:
  # e.g. left chaining
@@ -31,9 +44,11 @@ chaining:
 
 default_chain: right
 
+
 opposites:
 # or will you trip over your bootstraps into the rabbit hole of defining the properties of the semantics within the syntax itself?
 # "opposite" is a relation, naturally an edge. the edges "->" and "<-" should have the "opposites" edge between them.
+
 
 properties:
  # with graphical interpretation

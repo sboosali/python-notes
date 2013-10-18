@@ -27,7 +27,7 @@ def get_args():
     args.add_argument('--parse-all',
                       action='store_true',
                       help='parse all heads')
-    args.add_argument('--parse',
+    args.add_argument('--parse', '-p',
                       type=str,
                       default='',
                       help='takes a string and parses it')
@@ -43,6 +43,9 @@ def get_args():
     args.add_argument('--destroy',
                       action='store_true',
                       help='destroy all documents in "notes" collection')
+    args.add_argument('--note',
+                      action='store_true',
+                      help='parse all notes')
     args.add_argument('files',
                       nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
@@ -74,7 +77,6 @@ def make_notes(files):
     return notes
 
 def print_note(note: dict):
-    print()
     print('[head]', note['head'])
     for line in note['file']:
         print('[file]', line)
@@ -86,11 +88,24 @@ def write_notes_to_database(notes):
 
 def print_heads(notes):
     for note in notes:
-        head, line, cst, ast, nodes, edges, verbs = parse.head(note.head)
         print()
-        print(line)
+        print(note.head)
+        head, line, cst, ast, nodes, edges, verbs = parse.head(note.head)
         print(verbs)
     print()
+
+def print_notes(notes):
+    for note in notes:
+        print()
+        print()
+        head = note.head
+        print('>>>> %s' % head)
+        head, line, cst, ast, nodes, edges, verbs = parse.head(head)
+        print('     %s' % verbs)
+        for body in note.body:
+            print('>>>> %s' % body)
+            _, line, cst, ast, nodes, edges, verbs = parse.body(body, head)
+            print('     %s' % verbs)
 
 def print_parse(parsed):
     print()
@@ -104,13 +119,12 @@ def main():
 
     if args.test:
         h1('TESTING...')
-        args.files = ['tests/test.note']
-        args.head = True
+        args.files = ['test.note']
         args.freqs = True
-        args.parse_all = True
-        args.write = True
+        args.note = True
+#        args.write = True
         args.aliases = True
-        args.get = 'leonard cohen'
+#        args.get = 'leonard cohen'
         db.collection = db.database.test
 
     files = args.files if args.files else get_dropbox_notes()
@@ -132,10 +146,9 @@ def main():
         if args.test: h1('WRITE')
         write_notes_to_database(notes)
 
-    if args.parse_all:
-        if args.test: h1('PARSE')
-        for note in notes:
-            print_parse(parse.head(note.head))
+    if args.note:
+        if args.test: h1('NOTES')
+        print_notes(notes)
 
     if args.parse:
         print_parse(parse.head(args.parse))

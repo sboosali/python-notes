@@ -2,6 +2,7 @@ from collections import defaultdict
 import functools
 import inspect
 from multimethod import multimethod
+import builtins
 
 
 def h1(text):
@@ -118,6 +119,14 @@ def memoize(f, cache=None):
     return memoized
 
 class PatternExhausted(Exception): pass
+
+def min(xs, x=0):
+    xs = list(xs)
+    if xs:
+        return builtins.min(xs)
+    else:
+        return x
+
 
 if __name__ == "__main__":
     import doctest

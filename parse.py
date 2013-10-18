@@ -82,15 +82,15 @@ def get_operators(operators, line):
             if operator.min_spaces <= num_spaces:
                 yield operator.whiten(num_spaces)
 
-class Sym(str):
+class Symbol(str):
     def __getattribute__(self, attr):
-        '''transparently return a Sym for any str method call that returns a str.
+        '''transparently return a Symbol for any str method call that returns a str.
 
-        the line (regex) parsers wrap operators in Sym's, and the tree (recursive) parsers skip Sym's (meaning, "already parsed").
+        the line (regex) parsers wrap operators in Symbol's, and the tree (recursive) parsers skip Symbol's (meaning, "already parsed").
 
-        >>> isinstance(Sym('Sym').strip(), Sym)
+        >>> isinstance(Symbol('Symbol').strip(), Symbol)
         True
-        >>> isinstance(Sym('Sym').split(), list)
+        >>> isinstance(Symbol('Symbol').split(), list)
         True
         '''
 
@@ -98,11 +98,15 @@ class Sym(str):
         if hasattr(attr, '__call__'):
             def symbolize(*args, **kwargs):
                 ret = attr(*args, **kwargs)
-                ret = Sym(ret) if isinstance(ret, str) else ret
+                ret = Symbol(ret) if isinstance(ret, str) else ret
                 return ret
             return symbolize
         else:
             return attr
+
+class Operator(str): pass
+
+class Operand(str): pass
 
 def unparse(tree):
     '''
@@ -114,20 +118,20 @@ def unparse(tree):
 def parse_binop(op, line):
     '''parses a line with a binary operator.
 
-    wraps the operator(s) in Sym to say "this token has been parsed as a symbol of some operator, don't reparse it".
+    wraps the operator(s) in Operator to say "this token has been parsed as a symbol of some operator, don't reparse it".
 
     cleans the output
-    e.g. ['1 ', ' + ', ' 2'] => ['1', Sym('+'), '2']
+    e.g. ['1 ', ' + ', ' 2'] => ['1', Operator('+'), '2']
 
     >>> parse_binop(Binop(' -> '), 'x -> y -> z')
     Tree((Binop(' -> '), ['x', ' -> ', 'y', ' -> ', 'z']))
     '''
 
     regex = op.regex()
-    trees = re.split(regex, line)
+    trees = re.split(regex, line, re.UNICODE)
 
     # declare already parsed
-    trees = [Sym(word) if word in op else word
+    trees = [Operator(word) if word in op else word
             for word in trees]
     # e.g. ['', '+', 'ACh'] => ['+', 'ACh']
     trees = [word for word in trees if word.strip()]
@@ -152,7 +156,7 @@ def parse_ternop(op, line):
     filter away empty matches
     e.g. '[head]' =match=> ['', '[', 'head', ']', ''] =filter=> ['[', 'head', ']']
 
-    wraps the operator(s) in Sym to say "this token is a symbol of an operator, don't reparse it".
+    wraps the operator(s) in Operator to say "this token is a symbol of an operator, don't reparse it".
 
     cleans the output
     e.g. ['', ' [ ', 'head', ' ] ', ''] => ['[', 'head', ']']
@@ -161,7 +165,7 @@ def parse_ternop(op, line):
     >>> assert parse_ternop(op, 'x ~ y but z') == Tree((op, ['x ', '~', ' y ', 'but', ' z']))
     '''
     regex = op.regex()
-    match = re.search(regex, line)
+    match = re.search(regex, line, re.UNICODE)
 
     if match:
         match = match.groupdict()
@@ -170,7 +174,7 @@ def parse_ternop(op, line):
         trees = stagger(operands, operators)
 
         # declare operator symbols have been parsed
-        trees = [Sym(word) if word in op else word
+        trees = [Operator(word) if word in op else word
                 for word in trees]
         # e.g. ['', '[', 'context', ']', ''] => ['[', 'context', ']]
         trees = [word for word in trees if word.strip()]
@@ -179,6 +183,49 @@ def parse_ternop(op, line):
 
     else:
         return Tree(line)
+
+def parse_token(line):
+    '''search whole string for any matching substring, return the whole string
+
+    TODO matchdict . return dict with parts like 'host' 'page' 'params' . handle later
+
+    >>> word = 'α-lipoic acid'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> word = 'looks/sounds/feels'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> word = '5-HT'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> word = 'Na+'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> word = '1..10'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> word = '__str__'
+    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+
+    >>> url = 'http://host.com/page.html?param=value'
+    >>> assert match_token(url) == Tree((Unop('url'), [url]))
+    '''
+    for token, regexes in config.tokens:
+        for regex in regexes:
+
+            if isinstance(regex, dict):
+                regex = regex['not']
+                match = re.search(regex, line, re.UNICODE)
+                if match:
+                    return
+
+            else:
+                match = re.search(regex, line, re.UNICODE)
+                if match:
+                    value = Unop(token)
+#                    trees = [Operand(match.group())]
+                    trees = [Operand(line)]
+                    return Tree((value, trees))
 
 @typecheck
 def parse_op(op: Op, tree: Tree):
@@ -209,9 +256,14 @@ def parse_op(op: Op, tree: Tree):
     '''
     line, _ = tree
 
-    if isinstance(line, Sym):
+    if isinstance(line, Symbol):
         # already parsed
-        return tree
+        return Tree(line)
+
+    if not op.spaces:
+        token = parse_token(line)
+        if token:
+            return token
 
     if isinstance(op, Binop) or isinstance(op, Narop):
         return parse_binop(op, line)
@@ -263,10 +315,10 @@ def left_associate(tree: Tree) -> Tree:
         return Tree((value, trees))
 
 def AST(tree):
-    def is_noun(word): return not isinstance(word, Sym)
+    def is_operand(word): return not isinstance(word, Operator)
 
     tree = left_associate(tree) # n-ary tree => unary|binary|ternary tree
-    tree = tree.filter(f=is_noun, g=bool) # infix => prefix
+    tree = tree.filter(f=is_operand, g=bool) # infix => prefix
     tree = tree.map(f=lambda _: _.strip(), g=bool) # ' , ' => ','
     return tree
 
@@ -295,12 +347,13 @@ def head(line: str) -> Parsed:
     return Parsed(head, line, cst, ast, nodes, edges, verbs)
 
 @typecheck
-def body(line, head='') -> Parsed:
+def body(line, head_line='') -> Parsed:
     tokens = line.split()
     starts_with_op = tokens[0] in config.operators
-    prefix = head + get_max_spaces(line) if starts_with_op else ''
+    num_spaces = get_max_spaces(line)
+    prefix = head_line + ' '*num_spaces if starts_with_op else ''
     line = prefix + line
-    return parse.head(line)
+    return head(line)
 
 
 if __name__ == "__main__":

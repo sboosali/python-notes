@@ -6,12 +6,16 @@ import config
 class Op(tuple):
     def __new__(cls, *xs):
         return super().__new__(cls, xs)
-    def strip(self):
-        return self.__class__(*[_.strip() for _ in self])
+
     @property
     def symbol(self) -> str:
         return ' '.join(_.strip() for _ in self)
+    @property
+    def spaces(self):
+        return min(sum(1 for _ in _ if _==' ')//2 for _ in self)
 
+    def strip(self):
+        return self.__class__(*[_.strip() for _ in self])
     def regex(self): pass
     def whiten(self): pass
 
@@ -25,7 +29,7 @@ class Unop(Op):
     '''a unary operator.
     '''
     def __new__(cls, symbol):
-        return super().__new__(cls, (symbol,))
+        return super().__new__(cls, symbol)
 
     def __repr__(self):
         return 'Unop(%r)' % self
