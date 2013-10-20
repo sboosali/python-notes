@@ -90,22 +90,24 @@ def print_heads(notes):
     for note in notes:
         print()
         print(note.head)
-        head, line, cst, ast, nodes, edges, verbs = parse.head(note.head)
-        print(verbs)
     print()
 
 def print_notes(notes):
     for note in notes:
         print()
         print()
-        head = note.head
-        print('>>>> %s' % head)
-        head, line, cst, ast, nodes, edges, verbs = parse.head(head)
-        print('     %s' % verbs)
-        for body in note.body:
-            print('>>>> %s' % body)
-            _, line, cst, ast, nodes, edges, verbs = parse.body(body, head)
-            print('     %s' % verbs)
+
+        head, body = parse.note(note.head, note.body)
+
+        print('>>>> %s' % head.line)
+        print('     %s' % head.verbs)
+
+        for line, limb in zip(note.body, body):
+            print('>>>> %s' % line)
+            print('     %s' % limb.verbs)
+
+    print()
+    print()
 
 def print_parse(parsed):
     print()

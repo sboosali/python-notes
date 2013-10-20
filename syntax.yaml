@@ -115,44 +115,32 @@ chain:
  .       : join
 
 
-parsers:
- - src
-
-
 tokens:
+ # [{token: [verbose regex]}]
  # these regexes capture a line as an operand, keeping 0-space opeartors from wrongly parsing them
 
- word:
-  - ([\-.+_/]?)?(\w+?[\-.+_/]+?)+(\w+)?
-  # looks/sounds/feels
-  # 5-HT
-  # Na+
-  # 1..10
-  # __str__
+ - url:
+    - |
+      ((?P<scheme>https?|ftp):\/)?
+      \/?
+      ((?P<username>.*?)(:(?P<password>.*?)|)@)?
+      (?P<hostname>([^:\/\s]+\.)+[^:\/\s]+)
+      (?P<port>:([^\/]*))?
+      (?P<path>(\/\w+)*\/)
+      (?P<filename>[-\w.]+[^#?\s]*)?
+      (?P<query>\?([^#]*))?
+      (?P<fragment>#(.*))?
 
-  - not: ([0-9]*?[\.\,]?[0-9]+?)([\-+*/]([0-9]*?[\.\,]?[0-9]+?)+?)+?
-  # not 1.2+3.4
+ - word:
+    - not: |
+           ([0-9]*?[\.\,]?[0-9]+?)
+           ([\-+*/]([0-9]*?[\.\,]?[0-9]+?)+?)+?
 
- #  - |
- #    ^
- #    (
- #     \w +?
- #     [\-.+_/]
- #    ) +?
- #    (\w +?)
- #    $
+    - |
+      ([\-.+_/]?)?
+      (\w+?[\-.+_/]+?)+
+      (\w+)?
 
- url:
-   - ((?P<scheme>https?|ftp):\/)?\/?((?P<username>.*?)(:(?P<password>.*?)|)@)?(?P<hostname>[^:\/\s]+)(?P<port>:([^\/]*))?(?P<path>(\/\w+)*\/)(?P<filename>[-\w.]+[^#?\s]*)?(?P<query>\?([^#]*))?(?P<fragment>#(.*))?
- # - |
- #   ^
- #   ((?P<scheme>https?|ftp):\/)?
- #   \/?
- #   ((?P<username>.*?)(:(?P<password>.*?)|)@)?
- #   (?P<hostname>[^:\/\s]+)
- #   (?P<port>:([^\/]*))?
- #   (?P<path>(\/\w+)*\/)
- #   (?P<filename>[-\w.]+[^#?\s]*)?
- #   (?P<query>\?([^#]*))?
- #   (?P<fragment>#(.*))?
- #   $
+parsers:
+ - ellipsis: (^|\s)(\.\.\.)($|\s)
+ - default: .*

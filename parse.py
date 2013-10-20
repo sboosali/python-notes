@@ -47,7 +47,24 @@ import config
 import make
 from tree import Tree
 import chain
+import context
 
+
+Parsed = namedtuple('Parsed',
+                    'parser line cst ast nodes edges verbs head')
+
+_parsers = {}
+def parser(f):
+    '''decorated by `parser` means:
+    its name is in the conifg
+    it returns a `Parsed`
+    its called by `parse.head`
+    '''
+    _parsers[f.__name__] = f
+    assert f.__name__ in config.parsers
+    f.__annotations__.update({'return': Parsed, 'line': str})
+    f = typecheck(f)
+    return f
 
 def get_max_spaces(line: str):
     '''returns the maximum number of spaces in the line.
@@ -190,42 +207,42 @@ def parse_token(line):
     TODO matchdict . return dict with parts like 'host' 'page' 'params' . handle later
 
     >>> word = 'α-lipoic acid'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
 
     >>> word = 'looks/sounds/feels'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> parse_token(word)
+    Tree((Unop('word'), ['looks/sounds/feels']))
 
     >>> word = '5-HT'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
 
     >>> word = 'Na+'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
 
     >>> word = '1..10'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
 
     >>> word = '__str__'
-    >>> assert search_token(word) == Tree((Unop('word'), [word]))
+    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
 
     >>> url = 'http://host.com/page.html?param=value'
-    >>> assert match_token(url) == Tree((Unop('url'), [url]))
+    >>> assert parse_token(url) == Tree((Unop('url'), [url]))
+
+    >>> parse_token('1+2')
     '''
     for token, regexes in config.tokens:
         for regex in regexes:
 
             if isinstance(regex, dict):
                 regex = regex['not']
-                match = re.search(regex, line, re.UNICODE)
+                match = re.search(regex, line, re.UNICODE|re.VERBOSE)
                 if match:
-                    return
+                    break
 
             else:
-                match = re.search(regex, line, re.UNICODE)
+                match = re.search(regex, line, re.UNICODE|re.VERBOSE)
                 if match:
-                    value = Unop(token)
-#                    trees = [Operand(match.group())]
-                    trees = [Operand(line)]
-                    return Tree((value, trees))
+                    return Tree((Unop(token), [Operand(line)]))
 
 @typecheck
 def parse_op(op: Op, tree: Tree):
@@ -295,6 +312,9 @@ def CST(line: str) -> Tree:
 
 @typecheck
 def left_associate(tree: Tree) -> Tree:
+    ''': n-ary tree => binary tree
+    (only associates Binops, not Narops)
+    '''
     value, trees = tree
 
     if isinstance(value, Binop):
@@ -315,45 +335,93 @@ def left_associate(tree: Tree) -> Tree:
         return Tree((value, trees))
 
 def AST(tree):
+    '''the Abstract Syntax Tree
+    '''
     def is_operand(word): return not isinstance(word, Operator)
 
-    tree = left_associate(tree) # n-ary tree => unary|binary|ternary tree
+    tree = left_associate(tree)
     tree = tree.filter(f=is_operand, g=bool) # infix => prefix
     tree = tree.map(f=lambda _: _.strip(), g=bool) # ' , ' => ','
     return tree
 
 def Graph(tree):
+    '''get edges from the parse
+
+    memoization saves each subtree as it's reduced (whose leaves are by construction other reduced subtrees).
+    '''
     f = memoize(chain.reduce, cache=OrderedDict())
     tree.fold(f)
-    graph = [(edge, nodes) for ((edge, nodes), _) in f.__cache__.items()]
 
+    graph = [(edge, nodes) for ((edge, nodes), _) in f.__cache__.items()]
     edges = [(edge, nodes) for (edge, nodes) in graph if nodes]
-    head = f(*edges[-1])
     nodes = [node for (node, _) in graph if not _]
+    head = f(*edges[-1]) if edges else nodes[0]
 
     return head, nodes, edges
 
 def Verbs(edges):
     return [(config.verbs[edge.symbol],) + nodes for (edge, nodes) in edges]
 
-Parsed = namedtuple('Parsed', 'head line cst ast nodes edges verbs')
+def escape(line):
+    '''escape percentsign (good for one '%')
+    the code needs them for formatting.
+    the text needs it for (e.g.) notes about python code.
 
-@typecheck
-def head(line: str) -> Parsed:
+    identity
+    ∀ line . escape(line) % () == line
+
+    >>> line = '50%'
+    >>> escape(line) % () == line
+    True
+    '''
+    return line.replace('%', '%%')
+
+@parser
+def default(line):
+    '''the default parser for heads.
+    cst ~ associate the line into a tree
+    ast ~ clean up and binarize the Binop subtrees
+    graph ~ get edges from the parse tree
+    '''
     cst = CST(line)
     ast = AST(cst)
     head, nodes, edges = Graph(ast)
     verbs = Verbs(edges)
-    return Parsed(head, line, cst, ast, nodes, edges, verbs)
+    return Parsed('default', line, cst, ast, nodes, edges, verbs, head)
+
+@parser
+def ellipsis(line):
+    '''doesn't parse the head, only changes how the body is parsed.
+    '''
+    _ = None
+    return Parsed('ellipsis', line, _, _, _, _, _, line)
 
 @typecheck
-def body(line, head_line='') -> Parsed:
-    tokens = line.split()
-    starts_with_op = tokens[0] in config.operators
-    num_spaces = get_max_spaces(line)
-    prefix = head_line + ' '*num_spaces if starts_with_op else ''
-    line = prefix + line
-    return head(line)
+def parse_head(line: str) -> Parsed:
+    '''gets parser by matching regex to line => head
+
+    before the line is really parsed, it is checked against regular expressions (defined in `config.parsers`). whichever first matches (they are ordered), its parser is found (by string) and . it's dynamic in that a function must be found by name, but static in that everything can be checked before much code is run (just imports and `config.py`).
+    '''
+    for parser, regex in config.parsers.items():
+        if re.search(regex, line): break
+    parse = _parsers[parser]
+
+    return parse(line)
+
+@typecheck
+def parse_body(parsed: Parsed, line: str) -> Parsed:
+    '''put body in context wrt head => parse
+
+    create a "context" from the head and the body (given the parser that parsed the head). put the body into that context with formatting and parse it.
+    '''
+    holes = context.get(parsed.parser, parsed.head, line)
+    line = holes % escape(line)
+    return default(line)
+
+def note(head: str, body: str) -> (Parsed, Parsed):
+    head = parse_head(head)
+    body = [parse_body(head, line) for line in body]
+    return head, body
 
 
 if __name__ == "__main__":
