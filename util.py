@@ -5,6 +5,35 @@ from multimethod import multimethod
 import builtins
 
 
+def decorator(old_decorator):
+    '''
+
+    >>> @decorator
+    ... def twice(f):
+    ...     def twiced(*args, **kwargs):
+    ...         x = f(*args, **kwargs)
+    ...         return x,x
+    ...     return twiced
+
+    >>> @twice
+    ... def double(x):
+    ...     """docstring"""
+    ...     return x+x
+
+    >>> double.__name__
+    'double'
+    >>> double.__doc__
+    'docstring'
+    >>> double(2)
+    (4, 4)
+    '''
+    def new_decorator(f, **kwargs):
+        g = old_decorator(f, **kwargs)
+        g.__name__ = f.__name__
+        g.__doc__ = f.__doc__
+        return g
+    return new_decorator
+
 def h1(text):
     print()
     print('----- %s ------' % text)
@@ -61,6 +90,7 @@ def merge(xs,ys):
 def merge_dicts(x:dict, y:dict):
     return dict(list(x.items()) + list(y.items()))
 
+@decorator
 def typecheck(f):
 
     def typechecked(*args, **kwargs):
@@ -87,6 +117,7 @@ def typecheck(f):
 
     return typechecked
 
+@decorator
 def strict(f):
     '''turns an iterator into a function that returns a list.
 
@@ -101,10 +132,9 @@ def strict(f):
     '''
     def strict_f(*args, **kwargs):
         return list(f(*args, **kwargs))
-    strict_f.__name__ = f.__name__
-    strict_f.__doc__ = f.__doc__
     return strict_f
 
+@decorator
 def memoize(f, cache=None):
     if cache is None: cache = {}
 
@@ -113,8 +143,6 @@ def memoize(f, cache=None):
             cache[args] = f(*args, **kwargs)
         return cache[args]
 
-    memoized.__name__ = f.__name__
-    memoized.__doc__ = f.__doc__
     memoized.__cache__ = cache
     return memoized
 

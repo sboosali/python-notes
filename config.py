@@ -43,6 +43,7 @@ parsers = OrderedDict([(parser, regex)
                        for _ in parsers
                        for (parser, regex) in _.items()])
 
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

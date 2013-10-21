@@ -42,7 +42,7 @@ from collections import namedtuple
 
 from util import *
 import grammar
-from grammar import Op, Nulop, Unop, Narop, Binop, Ternop
+from op import Op, Nulop, Unop, Narop, Binop, Ternop
 import config
 import make
 from tree import Tree
