@@ -121,9 +121,9 @@ class Symbol(str):
         else:
             return attr
 
-class Operator(str): pass
+class Operator(Symbol): pass
 
-class Operand(str): pass
+class Operand(Symbol): pass
 
 def unparse(tree):
     '''
@@ -193,8 +193,9 @@ def parse_ternop(op, line):
         # declare operator symbols have been parsed
         trees = [Operator(word) if word in op else word
                 for word in trees]
-        # e.g. ['', '[', 'context', ']', ''] => ['[', 'context', ']]
-        trees = [word for word in trees if word.strip()]
+        #TODO keep empty strings for operand positions
+        # e.g. "(x) y" => ['', '(', 'x', ')', 'y']
+        trees = [word.strip() for word in trees if word.strip()]
 
         return Tree((op, trees))
 
@@ -418,7 +419,7 @@ def parse_body(parsed: Parsed, line: str) -> Parsed:
     line = holes % escape(line)
     return default(line)
 
-def note(head: str, body: str) -> (Parsed, Parsed):
+def note(head: str, body: str= []) -> (Parsed, Parsed):
     head = parse_head(head)
     body = [parse_body(head, line) for line in body]
     return head, body

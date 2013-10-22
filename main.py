@@ -97,9 +97,8 @@ def print_notes(notes):
         print()
         print()
 
+        print('>>>> %s' % note.head)
         head, body = parse.note(note.head, note.body)
-
-        print('>>>> %s' % head.line)
         print('     %s' % head.verbs)
 
         for line, limb in zip(note.body, body):
@@ -124,9 +123,7 @@ def main():
         args.files = ['test.note']
         args.freqs = True
         args.note = True
-#        args.write = True
         args.aliases = True
-#        args.get = 'leonard cohen'
         db.collection = db.database.test
 
     files = args.files if args.files else get_dropbox_notes()
@@ -153,7 +150,8 @@ def main():
         print_notes(notes)
 
     if args.parse:
-        print_parse(parse.head(args.parse))
+        head, _ = parse.note(args.parse)
+        print_parse(head)
 
     if args.get:
         if args.test: h1('GET')

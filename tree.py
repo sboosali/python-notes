@@ -84,7 +84,7 @@ class Tree(tuple):
 
         return Tree((value, trees))
 
-    def tmap(self, f):
+    def tmap(self, f: 'Tree α -> α | Tree α'):
         '''can 'grow' a tree by turning leaves into branches'''
         value, trees = self
         if not trees:
