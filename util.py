@@ -155,6 +155,10 @@ def min(xs, x=0):
     else:
         return x
 
+_ = None
+
+isa = isinstance
+
 
 if __name__ == "__main__":
     import doctest

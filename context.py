@@ -6,7 +6,13 @@ import config
 
 
 _contexts = {}
+@decorator
 def context(f):
+    '''decorated by 'context' means:
+
+    * it's name is in the config
+    * it merges a head and a body
+    '''
     _contexts[f.__name__] = f
     assert f.__name__ in config.parsers
     f.__annotations__ = {'return': str, 'head': str, 'body': str}
@@ -71,7 +77,12 @@ def ellipsis(head, _):
     >>> ellipsis('... -> ... -> ...', None)
     '%s -> %s -> %s'
     '''
-    return re.sub(r'(^|\s)(\.\.\.)($|\s)', ' %s ', head).strip()
+    regex = config.parsers['ellipsis']
+    return re.sub(regex, ' %s ', head).strip()
+
+@context
+def comment(head, _):
+    return ''
 
 
 if __name__ == "__main__":

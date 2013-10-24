@@ -46,19 +46,22 @@ from op import Op, Nulop, Unop, Narop, Binop, Ternop
 import config
 import make
 from tree import Tree
-import chain
 import context
+import tokens
+import graph
 
 
 Parsed = namedtuple('Parsed',
-                    'parser line cst ast nodes edges verbs head')
+                    'line cst ast nouns verbs nodes edges head parser')
 
 _parsers = {}
+@decorator
 def parser(f):
     '''decorated by `parser` means:
-    its name is in the conifg
-    it returns a `Parsed`
-    its called by `parse.head`
+
+    * its name is in the conifg
+    * it returns a `Parsed`
+    * its called by `parse.head`
     '''
     _parsers[f.__name__] = f
     assert f.__name__ in config.parsers
@@ -103,8 +106,6 @@ class Symbol(str):
     def __getattribute__(self, attr):
         '''transparently return a Symbol for any str method call that returns a str.
 
-        the line (regex) parsers wrap operators in Symbol's, and the tree (recursive) parsers skip Symbol's (meaning, "already parsed").
-
         >>> isinstance(Symbol('Symbol').strip(), Symbol)
         True
         >>> isinstance(Symbol('Symbol').split(), list)
@@ -121,9 +122,13 @@ class Symbol(str):
         else:
             return attr
 
-class Operator(Symbol): pass
+class Operator(Symbol):
+    '''the line (regex) parsers wrap operators in Operator's, and the tree parsers skips them (meaning, "already parsed").
+    '''
 
-class Operand(Symbol): pass
+class Operand(Symbol):
+    '''the tree parsers skips them (meaning, "already parsed").
+    '''
 
 def unparse(tree):
     '''
@@ -179,7 +184,8 @@ def parse_ternop(op, line):
     e.g. ['', ' [ ', 'head', ' ] ', ''] => ['[', 'head', ']']
 
     >>> op = Ternop('~', 'but')
-    >>> assert parse_ternop(op, 'x ~ y but z') == Tree((op, ['x ', '~', ' y ', 'but', ' z']))
+    >>> parse_ternop(op, 'x ~ y but z').leaves()
+    ['x ', '~', ' y ', 'but', ' z']
     '''
     regex = op.regex()
     match = re.search(regex, line, re.UNICODE)
@@ -195,55 +201,12 @@ def parse_ternop(op, line):
                 for word in trees]
         #TODO keep empty strings for operand positions
         # e.g. "(x) y" => ['', '(', 'x', ')', 'y']
-        trees = [word.strip() for word in trees if word.strip()]
+        trees = [word for word in trees if word.strip()]
 
         return Tree((op, trees))
 
     else:
         return Tree(line)
-
-def parse_token(line):
-    '''search whole string for any matching substring, return the whole string
-
-    TODO matchdict . return dict with parts like 'host' 'page' 'params' . handle later
-
-    >>> word = 'α-lipoic acid'
-    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
-
-    >>> word = 'looks/sounds/feels'
-    >>> parse_token(word)
-    Tree((Unop('word'), ['looks/sounds/feels']))
-
-    >>> word = '5-HT'
-    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
-
-    >>> word = 'Na+'
-    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
-
-    >>> word = '1..10'
-    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
-
-    >>> word = '__str__'
-    >>> assert parse_token(word) == Tree((Unop('word'), [word]))
-
-    >>> url = 'http://host.com/page.html?param=value'
-    >>> assert parse_token(url) == Tree((Unop('url'), [url]))
-
-    >>> parse_token('1+2')
-    '''
-    for token, regexes in config.tokens:
-        for regex in regexes:
-
-            if isinstance(regex, dict):
-                regex = regex['not']
-                match = re.search(regex, line, re.UNICODE|re.VERBOSE)
-                if match:
-                    break
-
-            else:
-                match = re.search(regex, line, re.UNICODE|re.VERBOSE)
-                if match:
-                    return Tree((Unop(token), [Operand(line)]))
 
 @typecheck
 def parse_op(op: Op, tree: Tree):
@@ -274,14 +237,14 @@ def parse_op(op: Op, tree: Tree):
     '''
     line, _ = tree
 
-    if isinstance(line, Symbol):
+    if isinstance(line, Operand) or isinstance(line, Operator):
         # already parsed
         return Tree(line)
 
     if not op.spaces:
-        token = parse_token(line)
-        if token:
-            return token
+        # 0-space operators must not parse apart tokens
+        if tokens.has_tokens(line):
+            return Tree(Operand(line))
 
     if isinstance(op, Binop) or isinstance(op, Narop):
         return parse_binop(op, line)
@@ -303,7 +266,7 @@ def CST(line: str) -> Tree:
     tree = Tree(line)
 
     for operator in operators:
-        tree = tree.tmap(f=lambda leaf: parse_op(operator, leaf))
+        tree = tree.tmap(lambda leaf: parse_op(operator, leaf))
 
     if tree.is_leaf():
         # nothing parsed
@@ -345,24 +308,6 @@ def AST(tree):
     tree = tree.map(f=lambda _: _.strip(), g=bool) # ' , ' => ','
     return tree
 
-def Graph(tree):
-    '''get edges from the parse
-
-    memoization saves each subtree as it's reduced (whose leaves are by construction other reduced subtrees).
-    '''
-    f = memoize(chain.reduce, cache=OrderedDict())
-    tree.fold(f)
-
-    graph = [(edge, nodes) for ((edge, nodes), _) in f.__cache__.items()]
-    edges = [(edge, nodes) for (edge, nodes) in graph if nodes]
-    nodes = [node for (node, _) in graph if not _]
-    head = f(*edges[-1]) if edges else nodes[0]
-
-    return head, nodes, edges
-
-def Verbs(edges):
-    return [(config.verbs[edge.symbol],) + nodes for (edge, nodes) in edges]
-
 def escape(line):
     '''escape percentsign (good for one '%')
     the code needs them for formatting.
@@ -386,16 +331,22 @@ def default(line):
     '''
     cst = CST(line)
     ast = AST(cst)
-    head, nodes, edges = Graph(ast)
-    verbs = Verbs(edges)
-    return Parsed('default', line, cst, ast, nodes, edges, verbs, head)
+    nouns, verbs, nodes, edges = graph.Graph(ast)
+    head = graph.Head(nouns, verbs)
+    return Parsed(line, cst, ast, nouns, verbs, nodes, edges, head, 'default')
 
 @parser
 def ellipsis(line):
     '''doesn't parse the head, only changes how the body is parsed.
     '''
     _ = None
-    return Parsed('ellipsis', line, _, _, _, _, _, line)
+    return Parsed(line, _, _, _, _, _, _, line, 'ellipsis')
+
+@parser
+def comment(line):
+    '''don't parse'''
+    _ = None
+    return Parsed(line, _, _, _, _, _, _, line, 'comment')
 
 @typecheck
 def parse_head(line: str) -> Parsed:

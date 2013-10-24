@@ -99,20 +99,37 @@ def print_notes(notes):
 
         print('>>>> %s' % note.head)
         head, body = parse.note(note.head, note.body)
-        print('     %s' % head.verbs)
+        for edge in (head.edges or []):
+            print('     %s' % str(edge))
 
         for line, limb in zip(note.body, body):
             print('>>>> %s' % line)
-            print('     %s' % limb.verbs)
+            for edge in (limb.edges or []):
+                print('     %s' % str(edge))
 
     print()
     print()
 
 def print_parse(parsed):
+    width = max(len(key) for key in parsed._fields)
     print()
+
     for key, val in parsed._asdict().items():
-        print('|')
-        print('| %s:\t%s' % (key,val))
+        first = True
+        key = str(key).ljust(width)
+        print(' '.ljust(width) + ' |')
+
+        if isinstance(val, list):
+            for _ in val:
+                if first:
+                    print('%s |' % key + (' %s' % (_,)))
+                    first = False
+                else:
+                    print(' '.ljust(width) + ' |'  + (' %s' % (_,)))
+
+        else:
+            print('%s | %s' % (key, val))
+
     print()
 
 def main():

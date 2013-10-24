@@ -110,6 +110,15 @@ class Tree(tuple):
 
         return Tree((value, trees))
 
+    def lift(_, f: 'α -> β') -> 'Tree α -> Tree β':
+        '''lifts a function on values to a function on trees
+        '''
+        def lifted(tree):
+            x, _ = tree
+            y = f(x)
+            return Tree(y)
+        return lifted
+
 def memoize(f, cache=None):
     if cache is None: cache = {}
 
@@ -239,4 +248,7 @@ if __name__=='__main__':
     nodes, edges = Graph(tree, left)
     assert edges == [(',', 'x', 'y'), (',', 'x', 'z'), (':', 'x', 'a'), ('=', 'x', 'b')]
 
-    print(tree)
+    def f(x): return x+1
+    tree = Tree(0)
+    tree = tree.tmap(tree.lift(f))
+    assert tree == Tree(1)

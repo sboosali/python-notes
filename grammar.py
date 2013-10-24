@@ -68,6 +68,5 @@ if __name__=='__main__':
     import doctest
     doctest.testmod()
 
-    for operator in OPERATORS:
-        print(operator)
-    print(SYMBOLS)
+    # for operator in OPERATORS:
+    #     print(operator)

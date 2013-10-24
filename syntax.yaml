@@ -34,6 +34,7 @@ operators:
  - --
 
  - src
+ - has
 
  - ==
  - ["+", "+"]
@@ -89,7 +90,7 @@ order:
 #  x , z
 #  x
 
-chain:
+reduce:
  __default__: right
 
  # head operators
@@ -141,6 +142,10 @@ tokens:
       (\w+?[\-.+_/]+?)+
       (\w+)?
 
+ - percent:
+    - (?P<n>\w+)%
+
 parsers:
  - ellipsis: (^|\s)(\.\.\.)($|\s)
+ - comment: ^\w*\.
  - default: .*

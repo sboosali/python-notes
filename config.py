@@ -17,8 +17,8 @@ order = syntax['order']
 default_min_spaces = syntax['min_spaces'].pop('__default__')
 min_spaces = defaultdict(lambda: default_min_spaces, syntax['min_spaces'])
 
-default_chain = syntax['chain'].pop('__default__')
-chain = defaultdict(lambda: default_chain, syntax['chain'])
+default_reduce = syntax['reduce'].pop('__default__')
+reduce = defaultdict(lambda: default_reduce, syntax['reduce'])
 
 
 @multimethod(str)
@@ -34,8 +34,8 @@ tokens = [(token, [escape_verbose_regex(regex) for regex in regexes])
 
 
 semantics = yaml.load(open('semantics.yaml'))
-default_verb = semantics['default_verb']
-verbs = defaultdict(lambda: default_verb, semantics['verbs'])
+edges = semantics['edges']
+edges = defaultdict(lambda: edges['__default__'], edges)
 
 
 parsers = syntax['parsers']

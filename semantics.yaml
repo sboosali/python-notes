@@ -1,7 +1,9 @@
-verbs:
+edges:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
- # maps "operators" to "verbs"
- ""      : text
+ # maps "verbs" to "edges"
+ __default__: ""
+
+ ""      : ""
 
  =       : equals
  :=      : defined_as
@@ -25,12 +27,10 @@ verbs:
 
  .       : and
  ","     : alias
-
+ has     : has
 
  url: url
  word: word
-
-default_verb: edge
 
 
 chaining:
