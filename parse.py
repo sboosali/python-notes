@@ -180,8 +180,8 @@ def parse_ternop(op, line):
 
     wraps the operator(s) in Operator to say "this token is a symbol of an operator, don't reparse it".
 
-    cleans the output
-    e.g. ['', ' [ ', 'head', ' ] ', ''] => ['[', 'head', ']']
+    empty operands are kept for the other operands' positions
+    e.g. "(x) y" => ['', '(', 'x', ')', 'y']
 
     >>> op = Ternop('~', 'but')
     >>> parse_ternop(op, 'x ~ y but z').leaves()
@@ -199,9 +199,6 @@ def parse_ternop(op, line):
         # declare operator symbols have been parsed
         trees = [Operator(word) if word in op else word
                 for word in trees]
-        #TODO keep empty strings for operand positions
-        # e.g. "(x) y" => ['', '(', 'x', ')', 'y']
-        trees = [word for word in trees if word.strip()]
 
         return Tree((op, trees))
 
@@ -237,6 +234,9 @@ def parse_op(op: Op, tree: Tree):
     '''
     line, _ = tree
 
+    if not line:
+        return Tree(line)
+
     if isinstance(line, Operand) or isinstance(line, Operator):
         # already parsed
         return Tree(line)
@@ -266,6 +266,7 @@ def CST(line: str) -> Tree:
     tree = Tree(line)
 
     for operator in operators:
+        # parse top-down: grow tree on each regex match
         tree = tree.tmap(lambda leaf: parse_op(operator, leaf))
 
     if tree.is_leaf():

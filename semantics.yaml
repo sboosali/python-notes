@@ -1,7 +1,8 @@
 edges:
  # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
  # maps "verbs" to "edges"
- __default__: ""
+
+ __default__: "?"
 
  ""      : ""
 
