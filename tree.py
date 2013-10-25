@@ -20,6 +20,12 @@ class Tree(tuple):
 
         return super().__new__(cls, (value, trees))
 
+    def __str__(self):
+        return '%s' % (self.repr(),)
+
+    def __repr__(self):
+        return 'Tree(%r)' % (self.repr(),)
+
     def repr(self):
         '''nicens leaves and puts brackets around children.
         i.e. ('leaf', ()) => 'leaf'
@@ -30,9 +36,6 @@ class Tree(tuple):
             return value
         else:
             return (value, [tree.repr() for tree in trees])
-
-    def __repr__(self):
-        return 'Tree(%r)' % (self.repr(),)
 
     @strict
     def preorder(self):

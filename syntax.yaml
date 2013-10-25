@@ -1,27 +1,30 @@
 operators:
  # defines syntax for recursive-regex and/or operator-precedence grammar
- # in descending precedence
+ # in descending precedence (i.e. topmost binds most tightly)
 
- - "[ ]"
- - '" "'
+ - "[  ]"
+ - '"  "'
 
- - < where
- - ~ but
-# - ~ as ~
+ -  < where
+ -  ~ but
 
  - :=
  - :-
  - "="
- - ["<", ">"]
+ - "<"
+ - ">"
  - ":"
  - "~"
  - v
 
- - [<-, ->]
- - [<--, -->]
+ - <-
+ - ->
+ - <--
+ - -->
  - [=>, ==>]
  - [<=, <==]
- - [<~, ~>]
+ - <~
+ - ~>
 
  - "{ }"
 

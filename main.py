@@ -5,7 +5,6 @@ import os
 
 from util import *
 import parse
-import db
 import notes as N
 import make
 
@@ -141,7 +140,6 @@ def main():
         args.freqs = True
         args.note = True
         args.aliases = True
-        db.collection = db.database.test
 
     files = args.files if args.files else get_dropbox_notes()
     notes = make_notes(files)

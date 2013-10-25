@@ -39,4 +39,6 @@ def left(x, ys): return ys[0]
 @reducer
 def right(x, ys): return ys[-1]
 @reducer
-def join(x, ys): return (' %s ' % x).join(y for y in ys if y)
+def join(x, ys): return '(%s)' % (' %s ' % x).join(y for y in ys if y)
+@reducer
+def prefix(x, ys): return '%s %s' % (x, ' '.join(ys))

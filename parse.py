@@ -164,8 +164,6 @@ def parse_binop(op, line):
 
     elif len(trees)==2:
         # unary operator
-        # op, _ = trees
-        # op = Unop(op)
         return Tree(line)
 
     else:
@@ -308,20 +306,6 @@ def AST(tree):
     tree = tree.filter(f=is_operand, g=bool) # infix => prefix
     tree = tree.map(f=lambda _: _.strip(), g=bool) # ' , ' => ','
     return tree
-
-def escape(line):
-    '''escape percentsign (good for one '%')
-    the code needs them for formatting.
-    the text needs it for (e.g.) notes about python code.
-
-    identity
-    ∀ line . escape(line) % () == line
-
-    >>> line = '50%'
-    >>> escape(line) % () == line
-    True
-    '''
-    return line.replace('%', '%%')
 
 @parser
 def default(line):

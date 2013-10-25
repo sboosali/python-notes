@@ -3,6 +3,7 @@ import functools
 import inspect
 from multimethod import multimethod
 import builtins
+import pprint
 
 
 def decorator(old_decorator):
@@ -158,6 +159,23 @@ def min(xs, x=0):
 _ = None
 
 isa = isinstance
+
+def escape(line):
+    '''escapes "%" (good for one format application)
+    the code needs them for formatting.
+    the text needs it for (e.g.) notes about python code.
+
+    identity
+    ∀ line . escape(line) % () == line
+
+    >>> line = '50%'
+    >>> escape(line) % () == line
+    True
+    '''
+    return line.replace('%', '%%')
+
+def pp(o):
+    return pprint.PrettyPrinter(indent=4).pprint(o)
 
 
 if __name__ == "__main__":

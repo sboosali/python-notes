@@ -18,7 +18,7 @@ def Graph(tree):
 
     verbs = [(verb, nouns) for (verb, nouns) in graph if isinstance(verb, Op)]
 
-    edges = [(config.edges[verb.symbol],) + nouns for (verb, nouns) in verbs]
+    edges = [Edge(verb, nouns) for (verb, nouns) in verbs]
 
     nouns = [noun for (noun, _) in graph if isinstance(noun, str)]
 
@@ -26,7 +26,10 @@ def Graph(tree):
 
     return nouns, verbs, nodes, edges
 
-def Head(nouns, verbs):
+def Head(nouns: [str], verbs: [(str, [str])]) -> str:
+    '''returns a noun from a noun list and a verb list. which comes from a line, that the next line might use it.
+    '''
+
     verb, _nouns = verbs[-1]
     if _nouns:
         head = reduce.reduce(verb, _nouns)
@@ -34,6 +37,17 @@ def Head(nouns, verbs):
         head = nouns[0]
 
     return head
+
+class Edge(tuple):
+    def __new__(cls, verb: Op, nouns: [str]):
+        label = config.edges[verb.symbol]
+        nodes = nouns
+
+        self = super().__new__(cls, (label,) + tuple(nodes))
+        self.label = label
+        self.nodes = nodes
+
+        return self
 
 
 if __name__ == "__main__":
