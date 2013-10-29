@@ -2,7 +2,6 @@ import re
 
 from util import *
 import config
-import reduce
 
 
 def is_unop(operator):
@@ -112,6 +111,9 @@ class Op(tuple):
         return self
 
     def __init__(self, *operators, **definition):
+        '''transforms definition, making the config strings into object attributes.
+        keep the `definition` for repacking
+        '''
 
         definition = dict_merge(config.default_definition, definition)
         definition.pop('arity', None)
@@ -119,8 +121,7 @@ class Op(tuple):
         min_spaces, max_spaces = munge_spacing(definition['spacing'])
         self.__dict__['spacing'] = Range(min_spaces, max_spaces)
 
-        reducer = definition['reduce']
-        self.__dict__['reduce'] = reduce.reducers[reducer]
+        self.__dict__['reduce'] = definition['reduce']
 
         self.__dict__['operands'] = definition['operands']
 

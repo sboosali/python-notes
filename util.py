@@ -5,6 +5,8 @@ from multimethod import multimethod
 import builtins
 import pprint
 
+from recipes import OrderedSet
+
 
 def decorator(old_decorator):
     '''
@@ -41,6 +43,9 @@ def h1(text):
     print()
 
 def odd(x): return (x%2)==1
+
+def remove_duplicates(xs):
+    return list(OrderedSet(xs))
 
 def has_no_duplicates(l):
     return len(l) == len(set(l))
@@ -100,6 +105,7 @@ def typecheck(f):
 
     def typechecked(*args, **kwargs):
         types = f.__annotations__
+        types = {var: typ for var, typ in types.items() if not isinstance(typ, str)}
         positionals = inspect.getfullargspec(f).args
         values = dict_merge(kwargs, dict(zip(positionals, args)))
         vars = set(types) & set(values)

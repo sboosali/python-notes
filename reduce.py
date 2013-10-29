@@ -13,6 +13,7 @@ from operator import itemgetter
 
 from util import *
 import config
+import op
 
 
 reducers = {}
@@ -35,6 +36,7 @@ def reduce_operand(operand, _):
 
 def reduce_operator(operator, operands):
     reducer = operator.reduce
+    reducer = reducers[reducer]
     return reducer(str(operator), operands)
 
 def reduce(operator, operands):
