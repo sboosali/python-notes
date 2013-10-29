@@ -23,13 +23,13 @@ use "import parse" to document the parsing functions like so: "parse.head()"
 >>> line = 'x , y , z : a = b'
 >>> tree = CST(line)
 
->>> tree
+>>> tree.map(f=lambda _: _.default(), g=lambda _: _)
 Tree((Binop(' = '), [(Binop(' : '), [(Binop(' , '), ['x', ' , ', 'y', ' , ', 'z']), ' : ', 'a']), ' = ', 'b']))
 >>> unparse(tree)
 'x , y , z : a = b'
 
 >>> tree = AST(tree)
->>> tree
+>>> tree.map(f=lambda _: _.default(), g=lambda _: _)
 Tree((Binop('='), [(Binop(':'), [(Binop(','), [(Binop(','), ['x', 'y']), 'z']), 'a']), 'b']))
 
 '''
@@ -39,6 +39,7 @@ import re
 from multimethod import multimethod
 from collections import OrderedDict
 from collections import namedtuple
+from copy import copy
 
 from util import *
 import grammar
@@ -54,7 +55,7 @@ import graph
 Parsed = namedtuple('Parsed',
                     'line cst ast nouns verbs nodes edges head parser')
 
-_parsers = {}
+parsers = {}
 @decorator
 def parser(f):
     '''decorated by `parser` means:
@@ -63,7 +64,7 @@ def parser(f):
     * it returns a `Parsed`
     * its called by `parse.head`
     '''
-    _parsers[f.__name__] = f
+    parsers[f.__name__] = f
     assert f.__name__ in config.parsers
     f.__annotations__.update({'return': Parsed, 'line': str})
     f = typecheck(f)
@@ -99,7 +100,7 @@ def get_operators(operators, line):
     '''
     for num_spaces in get_spacing(line):
         for operator in operators:
-            if operator.min_spaces <= num_spaces:
+            if num_spaces in operator.spacing:
                 yield operator.whiten(num_spaces)
 
 class Symbol(str):
@@ -145,10 +146,16 @@ def parse_binop(op, line):
     cleans the output
     e.g. ['1 ', ' + ', ' 2'] => ['1', Operator('+'), '2']
 
+    >>> parse_binop(Unop(' + '), '+ x')
+    Tree((Unop(' + '), ['+ ', 'x'])
+
+    >>> parse_binop(Narop(' . '), 'x . y . z')
+    Tree((Narop(' . '), ['x', ' . ', 'y', ' . ', 'z']))
+
     >>> parse_binop(Binop(' -> '), 'x -> y -> z')
     Tree((Binop(' -> '), ['x', ' -> ', 'y', ' -> ', 'z']))
-    '''
 
+    '''
     regex = op.regex()
     trees = re.split(regex, line, re.UNICODE)
 
@@ -158,17 +165,17 @@ def parse_binop(op, line):
     # e.g. ['', '+', 'ACh'] => ['+', 'ACh']
     trees = [word for word in trees if word.strip()]
 
-    if len(trees)==1:
-        # nothing parsed
-        return Tree(line)
-
-    elif len(trees)==2:
+    if len(trees)==2 and isa(op, Unop):
         # unary operator
-        return Tree(line)
+        return Tree((op, trees))
 
-    else:
+    elif len(trees)>=3 and (isa(op, Binop) or isa(op, Narop)):
         # binary operator
         return Tree((op, trees))
+
+    else:
+        # nothing parsed
+        return Tree(line)
 
 def parse_ternop(op, line):
     '''parses a line with a ternary operator.
@@ -244,7 +251,7 @@ def parse_op(op: Op, tree: Tree):
         if tokens.has_tokens(line):
             return Tree(Operand(line))
 
-    if isinstance(op, Binop) or isinstance(op, Narop):
+    if isa(op, Unop) or isa(op, Binop) or isa(op, Narop):
         return parse_binop(op, line)
 
     if isinstance(op, Ternop):
@@ -260,7 +267,7 @@ def CST(line: str) -> Tree:
     '''
 
     # e.g. [Binop('=>', '==>'), Ternop('<', 'where')]
-    operators = get_operators(grammar.OPERATORS, line)
+    operators = get_operators(grammar.precedence, line)
     tree = Tree(line)
 
     for operator in operators:
@@ -269,7 +276,7 @@ def CST(line: str) -> Tree:
 
     if tree.is_leaf():
         # nothing parsed
-        tree = Tree((Nulop(), [tree]))
+        tree = Tree((grammar.nulop, [tree]))
 
     return tree
 
@@ -285,7 +292,10 @@ def left_associate(tree: Tree) -> Tree:
 
         x = left_associate(x)
         y = left_associate(y)
-        left = Tree((Binop(op), [x, Tree(op), y]))
+        operator = copy(value)
+        operator = grammar.operators[op.strip()][0]
+        operands = [x, Tree(op), y]
+        left = Tree((operator, operands))
 
         if not zs:
             return left
@@ -341,7 +351,7 @@ def parse_head(line: str) -> Parsed:
     '''
     for parser, regex in config.parsers.items():
         if re.search(regex, line): break
-    parse = _parsers[parser]
+    parse = parsers[parser]
 
     return parse(line)
 

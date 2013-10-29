@@ -1,26 +1,12 @@
-'''
-
->>> Unop('+').format('ACh')
-'+ ACh'
-
->>> Binop('-').format(1,2)
-'1 - 2'
-
->>> Ternop('<', 'where').format('x','y','z')
-'x < y where z'
-
->>> Narop('.').format('a','b','c','d')
-'a . b . c . d'
-
-'''
 import re
 
 from util import *
 import config
+import reduce
 
 
 def is_unop(operator):
-    return re.match(r'(?P<op>\S+) _', operator)
+    return len(operator.split())==1
 
 def is_binop(operator):
     '''
@@ -34,10 +20,9 @@ def is_binop(operator):
 
 def is_narop(operator):
     '''
-    >>> assert is_narop(['.', '.'])
+    >>> assert is_narop('.')
     '''
-    if isinstance(operator, list):
-        return len(operator)==2 and operator[0]==operator[1]
+    return len(operator.split())==1
 
 def is_ternop(operator):
     '''
@@ -46,119 +31,208 @@ def is_ternop(operator):
     if isinstance(operator, str):
         return len(operator.split())==2
 
+def munge_spacing(spacing):
+    '''
+    >>> munge_spacing('')
+    (0, inf)
+    >>> munge_spacing(1)
+    (1, 1)
+    >>> munge_spacing('1,')
+    (1, inf)
+    >>> munge_spacing(',2')
+    (0, 2)
+    >>> munge_spacing('1,2')
+    (1, 2)
+    '''
+    min_spaces = 0
+    max_spaces = float('+inf')
+
+    if isinstance(spacing, int):
+        return spacing, spacing
+
+    regex = r'(?P<min>[0-9]+)?,(?P<max>[0-9]+)?$'
+    spacing = re.match(regex, spacing)
+
+    if spacing:
+        spacing = spacing.groupdict()
+        if spacing['min']:
+            min_spaces = int(spacing['min'])
+        if spacing['max']:
+            max_spaces = int(spacing['max'])
+
+        min_spaces = max(0, min_spaces)
+
+    return min_spaces, max_spaces
+
 
 class Op(tuple):
-    def __new__(cls, operator):
-        '''
-        groups operators by precedence:
-        the longer operators must come before the shorter ones,
-        for regexes like "( ==> | => )" to work right.
-
-        #TODO parse string and return subclass's object
-        # >>> Op('')
-        # Nulop()
-        # >>> Op('+ _')
-        # Unop('+')
-        # >>> Op('_ -> _')
-        # Binop('->')
-        # >>> Op('_ .')
-        # Narop('.')
-        # >>> Op('_ < _ where _')
-        # Ternop('<', 'where')
-
+    def __new__(cls, operator, **definition):
         '''
 
-        if not operator:
-            return Nulop()
+        >>> Op('')
+        Nulop()
+        >>> Op('+', arity='unary')
+        Unop('+')
+        >>> Op('->')
+        Binop('->')
+        >>> Op(['=>', '==>'])
+        Binop('==>', '=>')
+        >>> Op('.', arity='n-ary')
+        Narop('.')
+        >>> Op('< where')
+        Ternop('<', 'where')
 
-        elif is_narop(operator):
-            operator, _ = operator
-            return Narop(operator)
+        '''
+        arity = definition.get('arity', None)
+
+        if isinstance(operator, list):
+            if is_binop(operator):
+                self = Binop(*operator, **definition)
+
+        elif not operator:
+            self = Nulop(**definition)
+
+        elif is_unop(operator) and arity=='unary':
+            self = Unop(operator, **definition)
+
+        elif is_narop(operator) and arity=='n-ary':
+            self = Narop(operator, **definition)
 
         elif is_binop(operator):
-            if isinstance(operator, str):
-                return Binop(operator)
-            if isinstance(operator, list):
-                return Binop(*operator)
-
-        elif is_unop(operator):
-            operator, = operator.split()
-            return Unop(operator)
+            self = Binop(operator, **definition)
 
         elif is_ternop(operator):
             l, r = operator.split()
-            return Ternop(l,r)
+            self = Ternop(l,r,**definition)
 
         else:
-            msg = '{} does not match any Op'
+            msg = '{0} does not match any Op'
             raise PatternExhausted(msg.format(operator))
 
-    def format(self, *operands):
-        operands = tuple(escape(str(_)) for _ in operands)
-        operators = escape(str(self)).replace('_', '%s')
-        return operators % operands
+        return self
+
+    def __init__(self, *operators, **definition):
+
+        definition = dict_merge(config.default_definition, definition)
+        definition.pop('arity', None)
+
+        min_spaces, max_spaces = munge_spacing(definition['spacing'])
+        self.__dict__['spacing'] = Range(min_spaces, max_spaces)
+
+        reducer = definition['reduce']
+        self.__dict__['reduce'] = reduce.reducers[reducer]
+
+        self.__dict__['operands'] = definition['operands']
+
+        self.__dict__['means'] = definition['means']
+
+        self.__dict__['definition'] = definition
+
+    def __repr__(self):
+        args = [repr(_) for _ in self]
+
+        definition = dict_diff(config.default_definition, self.definition)
+        kwargs = ['%s=%r' % (var, val) for (var, val) in sorted(definition.items())]
+
+        construction = ', '.join(args + kwargs)
+
+        return '%s(%s)' % (self.__class__.__name__, construction)
+
+    def __str__(self):
+        return ' '.join(_.strip() for _ in self)
+
+    def __getitem__(self, item):
+        '''
+        operator[int] => tuple index
+        operator[str] => dict lookup
+        '''
+        if isinstance(item, int):
+            return tuple.__getitem__(self, item)
+        else:
+            return self.definition[item]
+
+    def __copy__(self):
+        '''it's a deepcopy too:
+        * unpack (i.e. * and **) makes a copy
+        * everything is immutable (i.e. tuple of strings/numbers)
+        '''
+        return self.__class__(*self, **self.definition)
+
+    def __eq__(self, other):
+        return self.id == other.id
+
+    def __hash__(self):
+        return hash(self.id)
 
     @property
-    def symbol(self) -> str:
-        return ' '.join(_.strip() for _ in self)
+    def id(self):
+        '''uniquely identifies an operator (wrt parsing)
+        '''
+        arity = self.__class__.__name__
+        symbols = tuple(self)
+        spaces = self.spaces
+        return (arity, symbols, spaces)
+
+    def default(self):
+        '''for cleaner doctests
+
+        >>> Op(' + ', means='plus').default()
+        Binop(' + ')
+
+        '''
+        return self.__class__(*self)
+
     @property
     def spaces(self):
         return min(sum(1 for _ in _ if _==' ')//2 for _ in self)
 
     def strip(self):
-        return self.__class__(*[_.strip() for _ in self])
-    def regex(self): pass
-    def whiten(self): pass
+        return self.__class__(*[_.strip() for _ in self], **self.definition)
 
 
 class Nulop(Op):
     '''the nullary operator.
     '''
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         return tuple.__new__(cls)
-
-    def __str__(self):
-        return ''
-
-    def __repr__(self):
-        return 'Nulop()'
-
 
 class Unop(Op):
     '''a unary operator.
     '''
-    def __new__(cls, symbol):
+    def __new__(cls, symbol, **definition):
         return tuple.__new__(cls, (symbol,))
 
-    def __str__(self):
-        return '%s _' % self
+    def whiten(self, n):
+        op, = self
+        op = op + ' '*n
+        return Unop(op, **self.definition)
 
-    def __repr__(self):
-        return 'Unop(%r)' % self
+    @property
+    def spaces(self):
+        op, = self
+        return sum(1 for _ in op if _==' ')
+
+    def regex(self):
+        '''
+        '''
+        op, = self
+        return '(%s)' % re.escape(op)
 
 
 class Binop(Op):
     '''a binary operator. each symbol shares the same precedence.
 
+    the longer operators must come before the shorter ones,
+    for regexes like "( ==> | => )" to work right.
+
     if at the start of a phrase, a Binop acts as a unary operator.
     e.g. "piracetam -> + ACh" may be parsed as "['piracetam', '->', ['+', 'ACh']]" which may be interpreted as "piracetam causes more acetylcholine" (i.e. unary "+" may mean "more" while binary "+" means "plus")
     '''
 
-    def __new__(cls, *symbols):
+    def __new__(cls, *symbols, **definition):
         symbols = sorted(symbols, key=len, reverse=True)
-        self = tuple.__new__(cls, symbols)
-        self.min_spaces = min(config.min_spaces[_] for _ in self)
-        return self
-
-    def __str__(self):
-        return '_ %s _' % (' _ '.join(self))
-
-    def __repr__(self):
-        if len(self)==1:
-            return 'Binop(%r)' % self[0]
-        else:
-            return 'Binop%r' % (tuple(self),)
+        return tuple.__new__(cls, symbols)
 
     def whiten(self, n):
         """decrease precedence of operator by adding `n` spaces.
@@ -166,7 +240,7 @@ class Binop(Op):
         >>> assert Binop('->').whiten(1) == Binop(' -> ')
         """
         ops = [' '*n + op + ' '*n for op in self]
-        return Binop(*ops)
+        return Binop(*ops, **self.definition)
 
     def regex(self):
         '''binary operators are chainable (e.g. 'x => y ==> z')
@@ -181,16 +255,8 @@ class Binop(Op):
 
 class Ternop(Op):
     '''a ternary operator.'''
-    def __new__(cls, l, r):
-        self = tuple.__new__(cls, (l, r))
-        self.min_spaces = config.min_spaces[self.symbol]
-        return self
-
-    def __str__(self):
-        return '_ %s _ %s _' % self
-
-    def __repr__(self):
-        return 'Ternop(%r, %r)' % self
+    def __new__(cls, l, r, **definition):
+        return tuple.__new__(cls, (l, r))
 
     def whiten(self, n):
         """decrease precedence of operator by adding spaces.
@@ -201,7 +267,7 @@ class Ternop(Op):
         l, r = self
         l = ' '*n + l + ' '*n
         r = ' '*n + r + ' '*n
-        return Ternop(l, r)
+        return Ternop(l, r, **self.definition)
 
     def regex(self):
         '''
@@ -219,23 +285,11 @@ class Ternop(Op):
 class Narop(Op):
     '''an n-ary operator. like binary, is chainable. unlike binary, it is not left-associated, so the 2+ operands are all passed to the verb.
     '''
-    def __new__(cls, symbol):
-        self = tuple.__new__(cls, (symbol,))
-        self.min_spaces = config.min_spaces[self.symbol]
-        return self
+    def __new__(cls, symbol, **definition):
+        return tuple.__new__(cls, (symbol,))
 
-    def __str__(self):
-        return '_ %s' % self
-
-    def __repr__(self):
-        op, = self
-        return 'Narop(%r)' % op
-
-    def format(self, *operands):
-        operands = map(str, operands)
-        operator, = self
-        operator = ' %s ' % operator
-        return operator.join(operands)
+    def __init__(self, symbol, **definition):
+        super().__init__(symbol, **definition)
 
     def whiten(self, n):
         """decrease precedence of operator by adding `n` spaces.
@@ -243,7 +297,7 @@ class Narop(Op):
         >>> assert Narop('->').whiten(1) == Narop(' -> ')
         """
         op, = self
-        return Narop(' '*n + op + ' '*n)
+        return Narop(' '*n + op + ' '*n, **self.definition)
 
     def regex(self):
         '''n-ary operators are chainable (e.g. 'x -> y -> z')

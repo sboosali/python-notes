@@ -1,21 +1,28 @@
+from collections import Hashable
+
 from util import *
-import config
 from op import Op
+import config
 
 
-CHARS = '123456789' + 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' + 'abcdefghijklmnopqrstuvwxyz' + '-/._' + '#$%^'
+#:: {str: [Op]}
+operators = {symbol:
+                 [Op(symbol, **definition) for definition in definitions]
+             for (symbol, definitions) in config.operators.items()}
 
-PREPOSITIONS = 'of in to with as at for on by from'.split()
-VERBS = 'is was has had want should can could will would do'.split()
-CONNECTIVES = 'and or not but while'.split()
-INTERROGATIVES = 'who what where when why how'.split()
+nulop = operators.pop('')[0]
 
-#: [Op]
-OPERATORS = [Op(op) for op in config.operators]
-assert has_no_duplicates(OPERATORS)
+#:: [Op]
+precedence = []
+for _ in config.precedence:
+    if isinstance(_, Hashable):
+        precedence.extend(operators[_])
+for _ in complement(operators, config.precedence):
+    precedence.extend(operators[_])
 
 
 if __name__=='__main__':
     import doctest
     doctest.testmod()
-    pp(OPERATORS)
+    pp(precedence)
+    print()

@@ -1,24 +1,23 @@
-from util import *
 import yaml
 from collections import defaultdict
 from collections import OrderedDict
 from multimethod import multimethod
 
+from util import *
+
 
 db = yaml.load(open('db.yaml'))
 
-
 syntax = yaml.load(open('syntax.yaml'))
 
-operators = syntax['operators']
+operators = yaml.load(open('operators.yaml'))
+default_definition, = operators.pop('__default__')
 
-order = syntax['order']
+precedence = syntax['precedence']
 
-default_min_spaces = syntax['min_spaces'].pop('__default__')
-min_spaces = defaultdict(lambda: default_min_spaces, syntax['min_spaces'])
 
-default_reduce = syntax['reduce'].pop('__default__')
-reduce = defaultdict(lambda: default_reduce, syntax['reduce'])
+visualization = yaml.load(open('visualization.yaml'))
+order = visualization['order']
 
 
 @multimethod(str)
@@ -34,8 +33,6 @@ tokens = [(token, [escape_verbose_regex(regex) for regex in regexes])
 
 
 semantics = yaml.load(open('semantics.yaml'))
-edges = semantics['edges']
-edges = defaultdict(lambda: edges['__default__'], edges)
 
 
 parsers = syntax['parsers']
@@ -47,3 +44,4 @@ parsers = OrderedDict([(parser, regex)
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
+    pp(operators)

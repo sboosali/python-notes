@@ -40,7 +40,7 @@ def Head(nouns: [str], verbs: [(str, [str])]) -> str:
 
 class Edge(tuple):
     def __new__(cls, verb: Op, nouns: [str]):
-        label = config.edges[verb.symbol]
+        label = verb.means
         nodes = nouns
 
         self = super().__new__(cls, (label,) + tuple(nodes))

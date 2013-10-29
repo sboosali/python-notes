@@ -1,0 +1,202 @@
+# the name of the operator (dict key) has the symbols and the precedence.
+# the operator definitions (dict values) are in a list.
+
+# each will be matched in order, depending on:
+# * the number of spaces
+# * the operands' regexes
+
+# what defines an operator?
+# * symbol (e.g. "-")
+# * arity (e.g. binary)
+# * spaces (e.g. 0)
+
+# each operator needs either:
+# * implicitly, underscores in the operator
+# * explicitly, an arity in the definitions
+
+# Binary versus Unary
+# "+" can be both binary (plus) and unary (positive) -> "+" is the binary "_ + _" and you must write "+ _" for unary
+
+# Binary versus N-ary
+# "." must be (one of) either binary "_ . _" or n-ary "_ ."
+
+ # mapping from concrete syntax (operators as config strings) to abstract syntax (relations as python classes)
+ # maps "verbs" to "edges"
+
+
+__default__:
+ # the default definition
+ - spacing: 1,
+   operands:
+    - .*
+   reduce: right
+   means: "?"
+
+
+'' :
+ - means: ''
+
+
+"-" :
+ - means: minus
+   arity: n-ary
+   spacing: 0,
+   operands:
+    - '[0-9]*?[\.\,]?[0-9]+?'
+   reduce: join
+
+ - means: hyphen
+   spacing: 0
+   reduce: join
+
+ - means: less
+   arity: unary
+   reduce: prefix
+
+
++ :
+ - means: plus
+   arity: n-ary
+   spacing: 0,
+   operands:
+    - '[0-9]*?[\.\,]?[0-9]+?'
+   reduce: join
+
+ - means: more
+   arity: unary
+   reduce: prefix
+
+
+. :
+ - means: and
+   arity: n-ary
+   reduce: join
+
+
+< where  :
+ - means: subset_where
+
+
+"[  ]"  :
+ - means: brackets
+
+'"  "'  :
+ - means: quote
+
+~ but  :
+ - means: like_but
+
+
+:=  :
+ - means: iff
+   reduce: left
+
+:-  :
+ - means: if
+   reduce: left
+
+"="  :
+ - means: equals
+   reduce: left
+
+"<"  :
+ - means: subset
+   reduce: left
+
+">"  :
+ - means: superset
+   reduce: left
+
+":"  :
+ - means: is_a
+   reduce: left
+
+
+"~"  :
+ - means: like
+   reduce: left
+
+v  :
+ - means: versus
+
+
+==  :
+ - means: same_as
+
+≈  :
+ - means: similar
+
+
+<-  :
+ - means: caused_by
+
+->  :
+ - means: causes
+
+<--  :
+ - means: implied_by
+
+-->  :
+ - means: implies
+
+=>  :
+ - means: goes_to
+
+==>  :
+ - means: becomes
+
+<=  :
+ - means: comes_from
+
+<==  :
+ - means: becomes_from
+
+<~  :
+ - means: needed_for
+
+~>  :
+ - means: depends_on
+
+
+","  :
+ - means: alias
+   reduce: left
+
+
+"{ }"  :
+ - means: set
+
+
+( )  :
+ - means: parens
+
+++  :
+ - means: high
+
+--  :
+ - means: low
+
+src  :
+ - means: src
+
+
+"*" :
+ - means: multiply
+   arity: n-ary
+   reduce: join
+
+"/"  :
+ - means: divide
+   arity: n-ary
+   reduce: join
+
+^  :
+ - means: exponentiate
+   reduce: join
+
+
+has  :
+ - means: has
+
+in  :
+ - means: in

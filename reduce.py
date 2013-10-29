@@ -1,10 +1,21 @@
+'''
+`reduce.reducers['reducer']` gets a reducer by name
+
+e.g. left reduction
+x , y , z
+(x , y) , z
+x , z
+x
+
+
+'''
 from operator import itemgetter
 
 from util import *
 import config
 
 
-_reducers = {}
+reducers = {}
 @decorator
 def reducer(f):
     '''decorated by `reducer` means:
@@ -14,25 +25,25 @@ def reducer(f):
       (e.g. flat tree: operator + list of operands)
 
     '''
-    _reducers[f.__name__] = f
-    f.__annotations__.update({'x': object, 'ys': list})
+    reducers[f.__name__] = f
+    f.__annotations__.update({'x': object, 'ys': tuple})
     f = typecheck(f)
     return f
 
-def reduce_noun(noun, _):
-    return noun
+def reduce_operand(operand, _):
+    return operand
 
-def reduce_verb(verb, nouns):
-    operator = verb.symbol
-    reducer = config.reduce[operator]
-    reducer = _reducers[reducer]
-    return reducer(verb, nouns)
+def reduce_operator(operator, operands):
+    reducer = operator.reduce
+    return reducer(str(operator), operands)
 
-def reduce(verb, nouns):
+def reduce(operator, operands):
     '''
-    TODO verb : ?
     '''
-    return reduce_verb(verb, nouns) if nouns else reduce_noun(verb, nouns)
+    if operands:
+        return reduce_operator(operator, operands)
+    else:
+        return reduce_operand(operator, operands)
 
 @reducer
 def left(x, ys): return ys[0]

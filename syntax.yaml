@@ -1,4 +1,4 @@
-operators:
+precedence:
  # defines syntax for recursive-regex and/or operator-precedence grammar
  # in descending precedence (i.e. topmost binds most tightly)
 
@@ -21,14 +21,14 @@ operators:
  - ->
  - <--
  - -->
- - [=>, ==>]
- - [<=, <==]
+ # - [=>, ==>]
+ # - [<=, <==]
  - <~
  - ~>
 
  - "{ }"
 
- - [., .]
+ - .
  - ","
 
  - ( )
@@ -36,87 +36,12 @@ operators:
  - ++
  - --
 
- - src
- - has
-
  - ==
- - ["+", "+"]
+ - "+"
  - "-"
- - ["*", "/"]
+ - "*"
+ - "/"
  - ^
-
-
-min_spaces:
- __default__: 1
-
- ( )   : 0
- "[ ]" : 0
- "{ }" : 0
-
- +   : 0
- "-" : 0
- "*" : 0
- /   : 0
- ^   : 0
-
-
-order:
- # sort lines by operator to show note
-
- - :=
- - :-
- - "="
-
- - <
- - ">"
- - < where
- - ":"
-
- - "~"
- - ~ but
-
- - ->
- - <-
- - ~>
- - <~
- - <--
- - -->
- - =>
- - <=
- - ==>
- - <==
-
-
-# e.g. left chaining
-#  x , y , z
-#  (x , y) , z
-#  x , z
-#  x
-
-reduce:
- __default__: right
-
- # head operators
-
- ","     : left
-
- :=      : left
- :-      : left
- "="     : left
- "~"     : left
-
- ":"     : left
- "<"     : left
- ">"     : left
-
- < where : left
- ~ but   : left
-
- +       : join
- "-"     : join
- "*"     : join
- /       : join
- .       : join
 
 
 tokens:
@@ -147,6 +72,7 @@ tokens:
 
  - percent:
     - (?P<n>\w+)%
+
 
 parsers:
  - ellipsis: (^|\s)(\.\.\.)($|\s)

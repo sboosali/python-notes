@@ -38,7 +38,7 @@ def starts_with_op(line):
     >>> assert not starts_with_op('line')
     '''
     tokens = line.split()
-    return tokens[0] in config.operators
+    return tokens[0] in config.precedence
 
 @context
 def default(head, body):

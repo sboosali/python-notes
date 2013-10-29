@@ -88,7 +88,11 @@ def merge(xs,ys):
     xs = list(set(xs + ys))
     return xs
 
-def merge_dicts(x:dict, y:dict):
+def dict_merge(x:dict, y:dict):
+    '''
+    >>> sorted(dict_merge({'a': 1, 'b': 2}, {'a': 11, 'c': 3}).items())
+    [('a', 11), ('b', 2), ('c', 3)]
+    '''
     return dict(list(x.items()) + list(y.items()))
 
 @decorator
@@ -97,7 +101,7 @@ def typecheck(f):
     def typechecked(*args, **kwargs):
         types = f.__annotations__
         positionals = inspect.getfullargspec(f).args
-        values = merge_dicts(kwargs, dict(zip(positionals, args)))
+        values = dict_merge(kwargs, dict(zip(positionals, args)))
         vars = set(types) & set(values)
         for var, val, typ in [(x, values[x], types[x]) for x in vars]:
             if not isinstance(val, typ):
@@ -174,8 +178,58 @@ def escape(line):
     '''
     return line.replace('%', '%%')
 
-def pp(o):
+def pp(o: object):
     return pprint.PrettyPrinter(indent=4).pprint(o)
+
+class Range:
+    def __init__(self, min=float('-inf'), max=float('+inf')):
+        self.min = min
+        self.max = max
+    def __contains__(self, x):
+        '''
+        >>> assert 0 not in Range(1,2)
+        >>> assert 1 in Range(1,2)
+        >>> assert 2 in Range(1,2)
+        >>> assert 3 not in Range(1,2)
+
+        >>> assert float('-inf') in Range()
+        >>> assert float('+inf') in Range()
+        '''
+        return self.min <= x <= self.max
+    def __repr__(self):
+        '''
+        >>> Range(1,2)
+        Range(1, 2)
+        '''
+        return 'Range(%r, %r)' % (self.min, self.max)
+
+def dict_diff(a: dict, b: dict):
+    '''relative complement between dicts `a \ b`
+    returns dict with all keyvals in `b` but not `a`
+
+    >>> dict_diff({'a': 1, 'b': 2}, {})
+    {}
+    >>> difference = dict_diff({'a': 1, 'b': 2, 'c': 3}, {'a': 1, 'b': 22, 'd': 4})
+    >>> sorted(difference.items())
+    [('b', 22), ('d', 4)]
+
+    '''
+    c = {}
+    for k,v in b.items():
+        if k not in a or a[k]!=v:
+            c[k] = v
+    return c
+
+@strict
+def complement(xs: iter, ys: iter):
+    '''
+    >>> complement(['a', 'b'], ['b', 'c'])
+    ['a']
+    '''
+    ys = set(ys)
+    for x in xs:
+        if x not in ys:
+            yield x
 
 
 if __name__ == "__main__":

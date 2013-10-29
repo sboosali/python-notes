@@ -135,11 +135,13 @@ def main():
     args = get_args()
 
     if args.test:
-        h1('TESTING...')
+        print()
+        print('= = = = = = = = = = = = = = = = = = = = ')
+        print('= = = = = = = = TESTING = = = = = = = =')
+        print('= = = = = = = = = = = = = = = = = = = = ')
+        print()
         args.files = ['test.note']
-        args.freqs = True
         args.note = True
-        args.aliases = True
 
     files = args.files if args.files else get_dropbox_notes()
     notes = make_notes(files)
