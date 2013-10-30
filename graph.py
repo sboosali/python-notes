@@ -77,13 +77,20 @@ def default(operator, operands):
     nodes = operands
     yield Edge(label, nodes)
 
-@edge
-def more(operator, operands):
+def default_unop(operator, operands):
+    symbol = str(operator)
     label = operator.means
     node, = operands
-    # TODO "+" -> awkward semantics-on-syntax dependency
-    nodes = [node, '+ %s' % node]
+    nodes = [node, '%s %s' % (symbol, node)]
     yield Edge(label, nodes)
+
+@edge
+def more(operator, operands):
+    return default_unop(operator, operands)
+
+@edge
+def less(operator, operands):
+    return default_unop(operator, operands)
 
 
 if __name__ == "__main__":
