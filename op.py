@@ -115,7 +115,7 @@ class Op(tuple):
         keep the `definition` for repacking
         '''
 
-        definition = dict_merge(config.default_definition, definition)
+        definition = dict_merge(config.default_operator, definition)
         definition.pop('arity', None)
 
         min_spaces, max_spaces = munge_spacing(definition['spacing'])
@@ -132,7 +132,7 @@ class Op(tuple):
     def __repr__(self):
         args = [repr(_) for _ in self]
 
-        definition = dict_diff(config.default_definition, self.definition)
+        definition = dict_diff(config.default_operator, self.definition)
         kwargs = ['%s=%r' % (var, val) for (var, val) in sorted(definition.items())]
 
         construction = ', '.join(args + kwargs)

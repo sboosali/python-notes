@@ -2,6 +2,7 @@ import yaml
 from collections import defaultdict
 from collections import OrderedDict
 from multimethod import multimethod
+from copy import copy
 
 from util import *
 
@@ -11,9 +12,9 @@ db = yaml.load(open('db.yaml'))
 syntax = yaml.load(open('syntax.yaml'))
 
 operators = yaml.load(open('operators.yaml'))
-default_definition, = operators.pop('__default__')
+default_operator, = operators.pop('__default__')
 
-precedence = syntax['precedence']
+operator_precedence = syntax['precedence']
 
 
 visualization = yaml.load(open('visualization.yaml'))
@@ -35,13 +36,16 @@ tokens = [(token, [escape_verbose_regex(regex) for regex in regexes])
 semantics = yaml.load(open('semantics.yaml'))
 
 
-parsers = syntax['parsers']
-parsers = OrderedDict([(parser, regex)
-                       for _ in parsers
-                       for (parser, regex) in _.items()])
+parser_precedence = syntax['parsers']
+
+parsers = yaml.load(open('parsers.yaml'))
+default_parser = parsers['default']
+for parser, definition in copy(parsers).items():
+    definition = dict_merge(default_parser, definition)
+    parsers[parser] = definition
 
 
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
-    pp(operators)
+    pp(parsers)

@@ -42,7 +42,7 @@ def get_args():
     args.add_argument('--destroy',
                       action='store_true',
                       help='destroy all documents in "notes" collection')
-    args.add_argument('--note',
+    args.add_argument('--note', '-n',
                       action='store_true',
                       help='parse all notes')
     args.add_argument('files',

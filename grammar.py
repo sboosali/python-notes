@@ -14,10 +14,10 @@ nulop = operators.pop('')[0]
 
 #:: [Op]
 precedence = []
-for _ in config.precedence:
+for _ in config.operator_precedence:
     if isinstance(_, Hashable):
         precedence.extend(operators[_])
-for _ in complement(operators, config.precedence):
+for _ in complement(operators, config.operator_precedence):
     precedence.extend(operators[_])
 
 

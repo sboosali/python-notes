@@ -146,8 +146,8 @@ def parse_binop(op, line):
     cleans the output
     e.g. ['1 ', ' + ', ' 2'] => ['1', Operator('+'), '2']
 
-    >>> parse_binop(Unop(' + '), '+ x')
-    Tree((Unop(' + '), ['+ ', 'x'])
+    >>> parse_binop(Unop('+ '), '+ x')
+    Tree((Unop('+ '), ['+ ', 'x']))
 
     >>> parse_binop(Narop(' . '), 'x . y . z')
     Tree((Narop(' . '), ['x', ' . ', 'y', ' . ', 'z']))
@@ -349,10 +349,12 @@ def parse_head(line: str) -> Parsed:
 
     before the line is really parsed, it is checked against regular expressions (defined in `config.parsers`). whichever first matches (they are ordered), its parser is found (by string) and . it's dynamic in that a function must be found by name, but static in that everything can be checked before much code is run (just imports and `config.py`).
     '''
-    for parser, regex in config.parsers.items():
+    for parser in config.parser_precedence:
+        definition = config.parsers[parser]
+        regex = definition['regex']
         if re.search(regex, line): break
-    parse = parsers[parser]
 
+    parse = parsers[parser]
     return parse(line)
 
 @typecheck
@@ -363,9 +365,14 @@ def parse_body(parsed: Parsed, line: str) -> Parsed:
     '''
     holes = context.get(parsed.parser, parsed.head, line)
     line = holes % escape(line)
-    return default(line)
 
-def note(head: str, body: str= []) -> (Parsed, Parsed):
+    definition = config.parsers[parsed.parser]
+    parser = definition['body']
+
+    parse = parsers[parser]
+    return parse(line)
+
+def note(head: str, body: str= ()) -> (Parsed, Parsed):
     head = parse_head(head)
     body = [parse_body(head, line) for line in body]
     return head, body

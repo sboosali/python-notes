@@ -75,6 +75,6 @@ tokens:
 
 
 parsers:
- - ellipsis: (^|\s)(\.\.\.)($|\s)
- - comment: ^\w*\.
- - default: .*
+ - ellipsis
+ - comment
+ - default

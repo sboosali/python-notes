@@ -15,7 +15,9 @@ def context(f):
     '''
     _contexts[f.__name__] = f
     assert f.__name__ in config.parsers
-    f.__annotations__ = {'return': str, 'head': str, 'body': str}
+    f.__annotations__ = {'head': str,
+                         'body': str,
+                         'return': 'format'}
     f = typecheck(f)
     return f
 
@@ -38,7 +40,7 @@ def starts_with_op(line):
     >>> assert not starts_with_op('line')
     '''
     tokens = line.split()
-    return tokens[0] in config.precedence
+    return tokens[0] in config.operators
 
 @context
 def default(head, body):
@@ -77,12 +79,13 @@ def ellipsis(head, _):
     >>> ellipsis('... -> ... -> ...', None)
     '%s -> %s -> %s'
     '''
-    regex = config.parsers['ellipsis']
+    definition = config.parsers['ellipsis']
+    regex = definition['regex']
     return re.sub(regex, ' %s ', head).strip()
 
 @context
 def comment(head, _):
-    return ''
+    return '%s'
 
 
 if __name__ == "__main__":

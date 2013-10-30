@@ -1,0 +1,20 @@
+# key = the name of the parser
+# val = the parser definition
+
+# (the parser definition)
+# parse the line with the parser if the line matches `regex`
+# parse the line's body with `body`
+
+
+default:
+ regex: .*
+ body: default
+
+
+ellipsis:
+ regex: (^|\s)(\.\.\.)($|\s)
+
+
+comment:
+ regex: ^\w*\.
+ body: comment
