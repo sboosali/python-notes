@@ -1,23 +1,5 @@
-#!/usr/bin/python
-from __future__ import division
 from util import *
-import db
-import parse
 
-
-""" e.g. note
--  -  -  -  -  -  -  -
-A , B
-< C
-: x
-= y
--> a
-=> b
---> c
-~> d
-. words
-
-"""
 
 sep = '\n\n'
 div = '-  -  -  -  -  -  -  -  -  -  -  -  -  -  -'
@@ -40,26 +22,34 @@ def is_verb_phrase(line):
     pass
 
 class Note:
-    notes = [] # the registry
+    '''
+
+    e.g. note
+
+        -  -  -  -  -  -  -  -
+        A , B < C
+        = D
+        -> x -> y
+        . words
+
+    '''
 
     @typecheck
-    def __new__(cls, head: str, body: list, file: str = ''):
-        self = super().__new__(cls)
-        cls.notes.append(self)
-
+    def __init__(self, head: str, body: list= None, file: str= ''):
+        if body is None: body = []
         self.head = head.strip()
         self.file = file
         self.body = [line.strip() for line in body if line.strip()]
-        return self
 
     def __iter__(self):
+        '''for `dict()`'''
         yield 'head', self.head
         yield 'body', self.body
         yield 'file', self.file
     def __bool__(self):
         return bool(self.head.strip())
-    def __str__(self):
-        return 'Note(head="%s")' % self.head
+    def __repr__(self):
+        return 'Note(head=%r, body=%r, file=%r)' % (self.head, self.body, self.file)
     def __hash__(self):
         return hash(self.head)
     def __cmp__(self, other):
@@ -75,9 +65,6 @@ class Note:
     @property
     def lines(self):
         return [self.head] + self.body
-    @property
-    def index(self):
-        return self.head
 
 def notify(file, lines):
     """makes Notes"""

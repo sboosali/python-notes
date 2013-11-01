@@ -1,18 +1,33 @@
-# import pymongo
-# from util import *
-# from notes import Note
-# import config
+import pymongo
+from util import *
+from notes import Note
+import config
 
 
-# host = config.db['mongo_host']
-# port = config.db['mongo_port']
+host = config.db['mongo_host']
+port = config.db['mongo_port']
 
-# client = pymongo.MongoClient(host, port)
-# database = client.notes
-# collection = database.notes
+client = pymongo.MongoClient(host, port)
+database = client.notes
+collection = database.notes
 
 # collection.create_index('head')
 
+def test():
+    global test_collection
+    global collection
+    test_collection = database.test
+    collection = test_collection
+
+def untest():
+    test_collection.remove()
+
+def find(query=None, **kwargs):
+    if query is None: query = {}
+    return list(collection.find(query, fields={'_id': False}, **kwargs))
+
+def find_one(query, **kwargs):
+    return collection.find_one(query, fields={'_id': False}, **kwargs)
 
 # def stats():
 #     """(all sizes in bytes)"""

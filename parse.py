@@ -45,7 +45,6 @@ from util import *
 import grammar
 from op import Op, Nulop, Unop, Narop, Binop, Ternop
 import config
-import make
 from tree import Tree
 import context
 import tokens

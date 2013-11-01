@@ -6,7 +6,7 @@ import os
 from util import *
 import parse
 import notes as N
-import make
+import db
 
 
 def get_args():
@@ -142,6 +142,7 @@ def main():
         print()
         args.files = ['test.note']
         args.note = True
+        db.test()
 
     files = args.files if args.files else get_dropbox_notes()
     notes = make_notes(files)
@@ -177,4 +178,7 @@ def main():
 
 
 if __name__=='__main__':
-    main()
+    try:
+        main()
+    finally:
+        db.untest()
