@@ -49,7 +49,7 @@ import make
 from tree import Tree
 import context
 import tokens
-import graph
+import edge
 
 
 Parsed = namedtuple('Parsed',
@@ -326,8 +326,8 @@ def default(line):
     '''
     cst = CST(line)
     ast = AST(cst)
-    nouns, verbs, nodes, edges = graph.Graph(ast)
-    head = graph.Head(nouns, verbs)
+    nouns, verbs, nodes, edges = edge.Graph(ast)
+    head = edge.Head(nouns, verbs)
     return Parsed(line, cst, ast, nouns, verbs, nodes, edges, head, 'default')
 
 @parser

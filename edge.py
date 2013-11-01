@@ -51,7 +51,7 @@ def Head(nouns: [str], verbs: [(str, [str])]) -> str:
     if _nouns:
         head = reduce.reduce(verb, _nouns)
     else:
-        head = nouns[0]
+        head = nouns[0] if nouns else None
 
     return head
 

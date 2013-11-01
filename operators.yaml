@@ -126,6 +126,12 @@ v  :
 ≈  :
  - means: similar
 
+≥  :
+ - means: greater_than_or_equal_to
+
+≤  :
+ - means: less_than_or_equal_to
+
 
 <-  :
  - means: caused_by
