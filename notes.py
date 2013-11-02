@@ -1,4 +1,8 @@
 from util import *
+import parse
+import graph
+import query
+import syntax
 
 
 sep = '\n\n'
@@ -72,3 +76,33 @@ def notify(file, lines):
     head, *body = lines
     note = Note(head=head, body=body, file=file)
     return note
+
+def write(note):
+    head, body = parse.note(note.head, note.body)
+
+    edges = head.edges
+    for limb in body:
+        for edge in limb.edges:
+            edges.append(edge)
+
+    for edge in edges:
+        graph.save(*edge)
+
+    return edges
+
+def get(line):
+    '''
+
+    e.g.
+    query   "_ -> + ACh"
+    parsed  ('causes', '_', '+ ACh')
+    schema  {'edge': 'causes',
+             'nodes': [... ['causes', 'piracetam', '+ ACh'], ...]}
+
+    '''
+    results = query.get(line)
+    for edge in results:
+        label, *nodes = edge
+        operator = syntax.meaning[label]
+        result = operator.format(*nodes)
+        yield result

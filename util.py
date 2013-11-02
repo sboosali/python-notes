@@ -237,6 +237,16 @@ def complement(xs: iter, ys: iter):
         if x not in ys:
             yield x
 
+def replace(this, that, xs):
+    '''replace `this` with `that` in the stream `xs`
+
+    >>> list(replace(1, 'x', [1,2,1]))
+    ['x', 2, 'x']
+
+    '''
+    for x in xs:
+        yield that if x==this else x
+
 
 if __name__ == "__main__":
     import doctest

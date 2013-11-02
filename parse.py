@@ -42,7 +42,7 @@ from collections import namedtuple
 from copy import copy
 
 from util import *
-import grammar
+import syntax
 from op import Op, Nulop, Unop, Narop, Binop, Ternop
 import config
 from tree import Tree
@@ -266,7 +266,7 @@ def CST(line: str) -> Tree:
     '''
 
     # e.g. [Binop('=>', '==>'), Ternop('<', 'where')]
-    operators = get_operators(grammar.precedence, line)
+    operators = get_operators(syntax.precedence, line)
     tree = Tree(line)
 
     for operator in operators:
@@ -275,7 +275,7 @@ def CST(line: str) -> Tree:
 
     if tree.is_leaf():
         # nothing parsed
-        tree = Tree((grammar.nulop, [tree]))
+        tree = Tree((syntax.nulop, [tree]))
 
     return tree
 
@@ -292,7 +292,7 @@ def left_associate(tree: Tree) -> Tree:
         x = left_associate(x)
         y = left_associate(y)
         operator = copy(value)
-        operator = grammar.operators[op.strip()][0]
+        operator = syntax.operators[op.strip()][0]
         operands = [x, Tree(op), y]
         left = Tree((operator, operands))
 
@@ -334,16 +334,16 @@ def ellipsis(line):
     '''doesn't parse the head, only changes how the body is parsed.
     '''
     _ = None
-    return Parsed(line, _, _, _, _, _, _, line, 'ellipsis')
+    return Parsed(line, (), (), [], [], [], [], line, 'ellipsis')
 
 @parser
 def comment(line):
     '''don't parse'''
     _ = None
-    return Parsed(line, _, _, _, _, _, _, line, 'comment')
+    return Parsed(line, (), (), [], [], [], [], line, 'comment')
 
 @typecheck
-def parse_head(line: str) -> Parsed:
+def head(line: str) -> Parsed:
     '''gets parser by matching regex to line => head
 
     before the line is really parsed, it is checked against regular expressions (defined in `config.parsers`). whichever first matches (they are ordered), its parser is found (by string) and . it's dynamic in that a function must be found by name, but static in that everything can be checked before much code is run (just imports and `config.py`).
@@ -357,7 +357,7 @@ def parse_head(line: str) -> Parsed:
     return parse(line)
 
 @typecheck
-def parse_body(parsed: Parsed, line: str) -> Parsed:
+def body(parsed: Parsed, line: str) -> Parsed:
     '''put body in context wrt head => parse
 
     create a "context" from the head and the body (given the parser that parsed the head). put the body into that context with formatting and parse it.
@@ -371,10 +371,10 @@ def parse_body(parsed: Parsed, line: str) -> Parsed:
     parse = parsers[parser]
     return parse(line)
 
-def note(head: str, body: str= ()) -> (Parsed, Parsed):
-    head = parse_head(head)
-    body = [parse_body(head, line) for line in body]
-    return head, body
+def note(_head: str, _body: str= ()) -> (Parsed, Parsed):
+    _head = head(_head)
+    _body = [body(_head, line) for line in _body]
+    return _head, _body
 
 
 if __name__ == "__main__":

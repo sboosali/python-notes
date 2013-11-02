@@ -17,6 +17,7 @@ def get_args():
     args.add_argument('-v',
                       action='store_true',
                       help='verbose option')
+
     args.add_argument('--head',
                       action='store_true',
                       help='show all heads')
@@ -26,25 +27,31 @@ def get_args():
     args.add_argument('--parse-all',
                       action='store_true',
                       help='parse all heads')
+    args.add_argument('--aliases',
+                      action='store_true',
+                      help='shows all aliases')
+    args.add_argument('--note', '-n',
+                      action='store_true',
+                      help='parse notes')
+    args.add_argument('--edges', '-e',
+                      action='store_true',
+                      help='takes .note files and visualizes the edges')
+
+    args.add_argument('--get',
+                      type=str,
+                      help='return the body of the head given')
+    args.add_argument('--write',
+                      action='store_true',
+                      help='write to database')
+    args.add_argument('--destroy',
+                      action='store_true',
+                      help='destroy all documents in "notes" collection')
+
     args.add_argument('--parse', '-p',
                       type=str,
                       default='',
                       help='takes a string and parses it')
-    args.add_argument('--write',
-                      action='store_true',
-                      help='write to database')
-    args.add_argument('--get',
-                      type=str,
-                      help='return the body of the head given')
-    args.add_argument('--aliases',
-                      action='store_true',
-                      help='shows all aliases')
-    args.add_argument('--destroy',
-                      action='store_true',
-                      help='destroy all documents in "notes" collection')
-    args.add_argument('--note', '-n',
-                      action='store_true',
-                      help='parse all notes')
+
     args.add_argument('files',
                       nargs='*',
                       help='zero or more `.note` files (defaults to Dropbox)')
@@ -83,7 +90,12 @@ def print_note(note: dict):
         print('[body]', line)
 
 def write_notes_to_database(notes):
-    pass
+    for note in notes:
+        note.print()
+        edges = N.write(note)
+        for edge in edges:
+            print('[edge]', edge)
+    print()
 
 def print_heads(notes):
     for note in notes:
@@ -163,18 +175,25 @@ def main():
         if args.test: h1('WRITE')
         write_notes_to_database(notes)
 
-    if args.note:
-        if args.test: h1('NOTES')
-        print_notes(notes)
-
     if args.parse:
         head, _ = parse.note(args.parse)
         print_parse(head)
 
     if args.get:
         if args.test: h1('GET')
-        note = db.get(args.get)
-        print_note(note)
+
+        print()
+        print(args.get)
+        results = N.get(args.get)
+
+        for result in results:
+            print(result)
+
+        print()
+
+    if args.note:
+        if args.test: h1('NOTES')
+        print_notes(notes)
 
 
 if __name__=='__main__':

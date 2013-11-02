@@ -1,6 +1,6 @@
 import pymongo
+
 from util import *
-from notes import Note
 import config
 
 
@@ -10,13 +10,14 @@ port = config.db['mongo_port']
 client = pymongo.MongoClient(host, port)
 database = client.notes
 collection = database.notes
+test_collection = database.test
 
-# collection.create_index('head')
+collection.create_index('node')
+collection.create_index('edge')
 
 def test():
     global test_collection
     global collection
-    test_collection = database.test
     collection = test_collection
 
 def untest():

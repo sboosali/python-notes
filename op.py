@@ -198,6 +198,9 @@ class Nulop(Op):
     def __new__(cls, *args, **kwargs):
         return tuple.__new__(cls)
 
+    def format(self, *_): return ''
+
+
 class Unop(Op):
     '''a unary operator.
     '''
@@ -208,6 +211,19 @@ class Unop(Op):
         op, = self
         op = op + ' '*n
         return Unop(op, **self.definition)
+
+    def format(self, operand):
+        '''
+
+        >>> Unop('+').format('x')
+        '+ x'
+
+        '''
+        operand = escape(operand)
+        operator, = self
+        operator = escape(operator)
+
+        return '%s %s' % (operator, operand)
 
     @property
     def spaces(self):
@@ -253,6 +269,17 @@ class Binop(Op):
         '''
         return '(%s)' % '|'.join(map(re.escape, self))
 
+    def format(self, *operands):
+        '''
+
+        >>> Binop('->').format('w', 'x', 'y', 'z')
+        'w -> x -> y -> z'
+
+        '''
+        operator, *_ = self
+        operator = ' %s ' % escape(operator)
+        return operator.join(operands)
+
 
 class Ternop(Op):
     '''a ternary operator.'''
@@ -282,6 +309,17 @@ class Ternop(Op):
         regex = regex.format(*operators, **operands)
         return regex
 
+    def format(self, *operands):
+        '''
+
+        >>> Ternop('<', 'where').format('x', 'y', 'z')
+        'x < y where z'
+
+        '''
+        symbols = stagger(operands, self)
+        string = ' '.join(symbols)
+        return string
+
 
 class Narop(Op):
     '''an n-ary operator. like binary, is chainable. unlike binary, it is not left-associated, so the 2+ operands are all passed to the verb.
@@ -308,6 +346,17 @@ class Narop(Op):
         '''
         op, = self
         return '(%s)' % re.escape(op)
+
+    def format(self, *operands):
+        '''
+
+        >>> Narop('.').format('w', 'x', 'y', 'z')
+        'w . x . y . z'
+
+        '''
+        operator, *_ = self
+        operator = ' %s ' % escape(operator)
+        return operator.join(operands)
 
 
 if __name__=='__main__':

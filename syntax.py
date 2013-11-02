@@ -20,9 +20,14 @@ for _ in config.operator_precedence:
 for _ in complement(operators, config.operator_precedence):
     precedence.extend(operators[_])
 
+#:: {str: str}
+meaning = {operator.means: operator for operator in precedence}
+# maps verbs (e.g. 'causes') back to symbols (e.g. '->')
+# verbs should be unique to operators
+
 
 if __name__=='__main__':
     import doctest
     doctest.testmod()
-    pp(precedence)
+    pp(meanings)
     print()

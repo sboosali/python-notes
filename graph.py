@@ -70,7 +70,7 @@ def save_edge(edge, collection=None):
     label, *nodes = edge
 
     query = {'edge': label}
-    update = {'$push': {'nodes': edge}}
+    update = {'$addToSet': {'nodes': edge}}
     collection.update(query, update, upsert=True)
 
     for node in nodes:
@@ -78,7 +78,7 @@ def save_edge(edge, collection=None):
 
 def save_node(node, edge=None, collection=None):
     query = {'node': node}
-    update = {'$push': {'edges': edge}} if edge else {}
+    update = {'$addToSet': {'edges': edge}} if edge else {}
     collection.update(query, update, upsert=True)
 
 
