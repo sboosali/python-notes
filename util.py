@@ -4,6 +4,8 @@ import inspect
 from multimethod import multimethod
 import builtins
 import pprint
+from itertools import filterfalse
+from itertools import tee
 
 from recipes import OrderedSet
 
@@ -246,6 +248,19 @@ def replace(this, that, xs):
     '''
     for x in xs:
         yield that if x==this else x
+
+def partition(predicate, iterable):
+    '''
+
+    >>> ts, fs = partition(lambda _: _%2==0, range(5))
+    >>> list(ts)
+    [0, 2, 4]
+    >>> list(fs)
+    [1, 3]
+
+    '''
+    i1, i2 = tee(iterable)
+    return filter(predicate, i1), filterfalse(predicate, i2)
 
 
 if __name__ == "__main__":

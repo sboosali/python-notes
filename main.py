@@ -183,7 +183,6 @@ def main():
         if args.test: h1('GET')
 
         print()
-        print(args.get)
         results = N.get(args.get)
 
         for result in results:

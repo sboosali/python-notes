@@ -101,8 +101,13 @@ def get(line):
 
     '''
     results = query.get(line)
-    for edge in results:
-        label, *nodes = edge
-        operator = syntax.meaning[label]
-        result = operator.format(*nodes)
-        yield result
+    for result in results:
+        label, *nodes = result
+
+        if label:
+            operator = syntax.meaning[label]
+            edge = operator.format(*nodes)
+            yield edge
+        else:
+            node, = nodes
+            yield node
