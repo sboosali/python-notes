@@ -30,9 +30,9 @@ def find(query=None, **kwargs):
 def find_one(query, **kwargs):
     return collection.find_one(query, fields={'_id': False}, **kwargs)
 
-# def stats():
-#     """(all sizes in bytes)"""
-#     return database.command('collstats', 'notes')
+def stats():
+    """(all sizes in bytes)"""
+    return database.command('collstats', 'notes')
 
 # @typecheck
 # def get(head: str):

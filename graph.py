@@ -60,8 +60,7 @@ def save(*edge, collection=None):
     if not collection: collection = db.collection
 
     label, *nodes = edge
-
-    if not nodes:
+    if is_node(edge):
         save_node(label, collection=collection)
     else:
         save_edge(edge, collection=collection)

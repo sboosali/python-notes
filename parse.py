@@ -357,18 +357,24 @@ def head(line: str) -> Parsed:
     return parse(line)
 
 @typecheck
-def body(parsed: Parsed, line: str) -> Parsed:
+def body(parsed: Parsed, body_line: str) -> Parsed:
     '''put body in context wrt head => parse
 
     create a "context" from the head and the body (given the parser that parsed the head). put the body into that context with formatting and parse it.
     '''
-    holes = context.get(parsed.parser, parsed.head, line)
-    line = holes % escape(line)
+    head_parser = parsed.parser
+    definition = config.parsers[head_parser]
+    body_parser = definition['body']
+    parse = parsers[body_parser]
 
-    definition = config.parsers[parsed.parser]
-    parser = definition['body']
+    #HACK
+    if re.search(config.parsers['comment']['regex'], body_line):
+        return parsers['comment'](body_line)
 
-    parse = parsers[parser]
+    head_line = parsed.head
+    holes = context.get(head_parser, head_line, body_line)
+    line = holes % escape(body_line)
+
     return parse(line)
 
 def note(_head: str, _body: str= ()) -> (Parsed, Parsed):

@@ -13,10 +13,6 @@ class Aught:
         return '_'
 _ = Aught()
 
-def is_node(edge):
-    label, *_ = edge
-    return not label
-
 def querify(edges):
     '''
 

@@ -47,10 +47,14 @@ def get_args():
                       action='store_true',
                       help='destroy all documents in "notes" collection')
 
-    args.add_argument('--parse', '-p',
+    args.add_argument('-p',
                       type=str,
                       default='',
                       help='takes a string and parses it')
+    args.add_argument('--parse',
+                      type=str,
+                      default='',
+                      help='takes a file and parses it')
 
     args.add_argument('files',
                       nargs='*',
@@ -92,7 +96,9 @@ def print_note(note: dict):
 def write_notes_to_database(notes):
     for note in notes:
         note.print()
-        edges = N.write(note)
+        nodes, edges = N.write(note)
+        for node in nodes:
+            print('[node]', node)
         for edge in edges:
             print('[edge]', edge)
     print()
@@ -156,6 +162,9 @@ def main():
         args.note = True
         db.test()
 
+    if args.parse:
+        args.files = [args.parse]
+
     files = args.files if args.files else get_dropbox_notes()
     notes = make_notes(files)
 
@@ -175,9 +184,18 @@ def main():
         if args.test: h1('WRITE')
         write_notes_to_database(notes)
 
-    if args.parse:
-        head, _ = parse.note(args.parse)
+    if args.p:
+        head, _ = parse.note(args.p)
         print_parse(head)
+
+    if args.parse:
+        print()
+        for note in notes:
+            head, body = parse.note(note.head, note.body)
+            print(head.edges)
+            for limb in body:
+                print(limb.edges)
+            print()
 
     if args.get:
         if args.test: h1('GET')

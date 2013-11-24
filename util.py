@@ -113,7 +113,7 @@ def typecheck(f):
         vars = set(types) & set(values)
         for var, val, typ in [(x, values[x], types[x]) for x in vars]:
             if not isinstance(val, typ):
-                msg = 'in "{f}(... {var}:{typ} ...)", "{var}" was "{val}"'
+                msg = 'in "{f}(... {var}:{typ} ...)", {var} was {val}'
                 msg = msg.format(**{'f': f.__name__, 'var':var, 'val':val, 'typ':typ})
                 raise TypeError(msg)
 
@@ -261,6 +261,10 @@ def partition(predicate, iterable):
     '''
     i1, i2 = tee(iterable)
     return filter(predicate, i1), filterfalse(predicate, i2)
+
+def is_node(arc):
+    label, *vertices = arc
+    return not label or len(vertices)==1
 
 
 if __name__ == "__main__":

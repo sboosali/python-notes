@@ -77,18 +77,27 @@ def notify(file, lines):
     note = Note(head=head, body=body, file=file)
     return note
 
+def partition_arcs(arcs):
+    nodes, edges = partition(is_node, arcs)
+    return list(nodes), list(edges)
+
 def write(note):
     head, body = parse.note(note.head, note.body)
 
-    edges = head.edges
+    arcs = head.edges
     for limb in body:
-        for edge in limb.edges:
-            edges.append(edge)
+        for arc in limb.edges:
+            arcs.append(arc)
+
+    nodes, edges = partition_arcs(arcs)
+
+    for node in nodes:
+        graph.save(node)
 
     for edge in edges:
         graph.save(*edge)
 
-    return edges
+    return nodes, edges
 
 def get(line):
     '''
