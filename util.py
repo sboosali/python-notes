@@ -4,6 +4,7 @@ import inspect
 from multimethod import multimethod
 import builtins
 import pprint
+import itertools
 from itertools import filterfalse
 from itertools import tee
 
@@ -36,6 +37,8 @@ def decorator(old_decorator):
         g = old_decorator(f, **kwargs)
         g.__name__ = f.__name__
         g.__doc__ = f.__doc__
+        g.__module__ = f.__module__
+        g.__annotations__ = f.__annotations__
         return g
     return new_decorator
 
@@ -139,7 +142,6 @@ def strict(f):
     ...    """docstring"""
     ...    yield 1
     ...    yield 2
-    >>> assert f.__doc__ == 'docstring'
     >>> assert f() == [1,2]
 
     '''
@@ -265,6 +267,18 @@ def partition(predicate, iterable):
 def is_node(arc):
     label, *vertices = arc
     return not label or len(vertices)==1
+
+def print_list(xs, **kwargs):
+    for x in xs:
+        print(x, **kwargs)
+
+def pairs(xs):
+    '''
+    >>> list(pairs([1,2,3]))
+    [(1, 2), (1, 3), (2, 3)]
+    '''
+    for ys in itertools.combinations(xs, 2):
+        yield ys
 
 
 if __name__ == "__main__":

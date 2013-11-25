@@ -7,6 +7,7 @@ from util import *
 import parse
 import notes as N
 import db
+import visualization
 
 
 def get_args():
@@ -46,6 +47,10 @@ def get_args():
     args.add_argument('--destroy',
                       action='store_true',
                       help='destroy all documents in "notes" collection')
+    args.add_argument('--visualize',
+                      type=str,
+                      default='notes',
+                      help='visualize a collection in the database by printing json for d3')
 
     args.add_argument('-p',
                       type=str,
@@ -160,6 +165,7 @@ def main():
         print()
         args.files = ['test.note']
         args.note = True
+        args.write = True
         db.test()
 
     if args.parse:
@@ -212,9 +218,16 @@ def main():
         if args.test: h1('NOTES')
         print_notes(notes)
 
+    if args.visualize:
+        db.collection = db.database[args.visualize]
+        nodes, edges = db.graph()
+        graph = visualization.logic_graph_to_visual_graph(nodes, edges)
+        print(graph)
+
 
 if __name__=='__main__':
     try:
         main()
     finally:
-        db.untest()
+        # db.untest()
+        pass

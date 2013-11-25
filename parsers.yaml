@@ -14,7 +14,6 @@ default:
 ellipsis:
  regex: (^|\s)(\.\.\.)($|\s)
 
-
 comment:
  regex: ^\w*\.
  body: comment

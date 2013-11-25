@@ -25,14 +25,26 @@ def untest():
 
 def find(query=None, **kwargs):
     if query is None: query = {}
-    return list(collection.find(query, fields={'_id': False}, **kwargs))
+    fields = dict_merge({'_id': False}, kwargs.pop('fields', {}))
+    return list(collection.find(query, fields=fields, **kwargs))
 
 def find_one(query, **kwargs):
+    fields = dict_merge({'_id': False}, kwargs.pop('fields', {}))
     return collection.find_one(query, fields={'_id': False}, **kwargs)
 
 def stats():
     """(all sizes in bytes)"""
     return database.command('collstats', 'notes')
+
+def graph():
+    nodes = find({'node': {'$exists': True}})
+    nodes = [_['node'] for _ in nodes]
+
+    edges = find({'edge': {'$exists': True}})
+    edges = [edge for _ in edges for edge in _['nodes']]
+
+    return nodes, edges
+
 
 # @typecheck
 # def get(head: str):
