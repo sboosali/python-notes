@@ -45,7 +45,10 @@ def logic_graph_to_visual_graph(nodes, edges) -> json:
     '''
 
     edges = [edge for arc in edges for edge in cliquify(arc)]
-    links = [{'source': nodes.index(S), 'label': V, 'target': nodes.index(O)} for V,S,O in edges]
+    links = [{'source': nodes.index(S),
+              'name': V,
+              'target': nodes.index(O)}
+             for V,S,O in edges]
     nodes = [{'name': node} for node in nodes]
     graph = {'nodes': nodes, 'links': links}
 
@@ -53,6 +56,7 @@ def logic_graph_to_visual_graph(nodes, edges) -> json:
 
 
 if __name__ == "__main__":
+    # BUG: doctest, trailing unseen char
     # import doctest
     # doctest.testmod()
 

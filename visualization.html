@@ -15,11 +15,31 @@ svg {
 	position: absolute;
 
 	top:0%;
-	height:100%;
+	height:90%;
 
 	left:0%;
 	width:80%
 }
+
+.show {
+	position: absolute;
+
+	top:90%;
+	height:10%;
+
+	left:0%;
+	width:80%;
+
+	background-color: white;
+  border: 1px solid black;
+
+	text-align: justify;
+	font-size: 3vw;
+	text-align: center;
+	vertical-align: middle;
+}
+
+/* */
 
 .notes, textarea, input[type=text] {
 	position: absolute;
@@ -30,6 +50,7 @@ svg {
 	left:80%;
 	width:20%;
 
+	font-size: 2vw;
 	background-color: white;
   border: 1px solid black;
 }
@@ -52,10 +73,7 @@ svg {
   border: 1px solid black;
 }
 
-/* :hover {
-	background-color: lightblue;
-}
- */
+/* */
 
 .node {
   fill: black;
@@ -85,14 +103,16 @@ svg {
 
 <form>
 <textarea class="notes"></textarea>
-<!-- <div class="query"><input type="submit" value="Note!"/></div> -->
+<!-- <div class="query"><input type="submit" value="parse notes and draw graph"></div> -->
 <div class="query">parse notes and draw graph</div>
 </form>
 
-<script src="http://d3js.org/d3.v3.min.js"></script>
+<div class="show"></div>
+
+<script src="d3.v3.min.js"></script>
 <script src="fisheye.js"></script>
 
-<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.1/jquery.min.js"></script>
+<script src="jquery.min.js"></script>
 
 <script>
 $('.query').click(function() {
@@ -142,6 +162,42 @@ function stroke_width (d) {
 
 //
 
+var show = '(hover over a node/link to see it here. click on it to stick it.)';
+$('.show').text(show);
+
+function verbalize (d) {
+	return d.source.name + ' ' + d.name + ' ' + d.target.name;
+}
+
+function enter_link (d) {
+	$('.show').text(verbalize(d));
+}
+
+function leave_link() {
+	$('.show').text(show);
+}
+
+
+function enter_node (d) {
+	$('.show').text(d.name);
+}
+
+function leave_node() {
+	$('.show').text(show);
+}
+
+function click_node (d) {
+	show = d.name;
+	$('.show').text(show);
+}
+
+function click_link (d) {
+	show = verbalize(d);
+	$('.show').text(show);
+}
+
+//
+
 function visualize(error, graph) {
   force
       .nodes(graph.nodes)
@@ -165,6 +221,14 @@ function visualize(error, graph) {
       .call(drag);
 
   node.text(function(d) { return d.name; });
+
+	node.on('mouseenter', enter_node);
+	node.on('mouseleave', leave_node);
+	node.on('click', click_node)
+
+	link.on('mouseenter', enter_link);
+	link.on('mouseleave', leave_link);
+	link.on('click', click_link);
 
   //
 
