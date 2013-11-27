@@ -7,23 +7,30 @@ import syntax
 
 sep = '\n\n'
 div = '-  -  -  -  -  -  -  -  -  -  -  -  -  -  -'
+
 def is_div(line):
     return ('-----' in line) or ('- - -' in line) or ('-  -  -' in line)
-
-def is_note(s):
-    return s.strip() and s != sep and s != div
-
-def aliases(head):
-    return head.split(' , ')
 
 def is_line(line):
     return line.strip() and not is_div(line)
 
-def is_noun_phrase(line):
-    pass
+def make_lines(block):
+    return [line.strip() for line in block if is_line(line)]
 
-def is_verb_phrase(line):
-    pass
+def make_blocks(chars):
+    blocks = [block.split('\n') for block in chars.split('\n\n')]
+    blocks = [make_lines(block) for block in blocks]
+    return blocks
+
+def make_notes(files):
+    notes = []
+
+    for file in files:
+        chars = open(file).read()
+        blocks = make_blocks(chars)
+        notes.extend(filter(bool, (notify(file, line) for line in blocks)))
+
+    return notes
 
 class Note:
     '''
@@ -122,3 +129,31 @@ def get(line):
         else:
             node, = nodes
             yield node
+
+def write_notes_to_database(notes):
+    for note in notes:
+        note.print()
+        nodes, edges = write(note)
+        for node in nodes:
+            print('[node]', node)
+        for edge in edges:
+            print('[edge]', edge)
+    print()
+
+def print_notes(notes):
+    for note in notes:
+        print()
+        print()
+
+        print('>>>> %s' % note.head)
+        head, body = parse.note(note.head, note.body)
+        for edge in (head.edges or []):
+            print('     %s' % str(edge))
+
+        for line, limb in zip(note.body, body):
+            print('>>>> %s' % line)
+            for edge in (limb.edges or []):
+                print('     %s' % str(edge))
+
+    print()
+    print()

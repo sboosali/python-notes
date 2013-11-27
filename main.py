@@ -1,13 +1,12 @@
 #!/usr/bin/python3
 import argparse
-import glob
-import os
 
 from util import *
 import parse
 import notes as N
 import db
 import visualization
+import disk
 
 
 def get_args():
@@ -67,93 +66,6 @@ def get_args():
     args = args.parse_args()
     return args
 
-def get_dropbox_notes():
-    files = '~/Dropbox/*.note'
-    files = glob.glob(os.path.expanduser(files))
-    files += [os.path.expanduser('~/Dropbox/.note')]
-    return files
-
-def make_lines(block):
-    return [line.strip() for line in block if N.is_line(line)]
-
-def make_blocks(chars):
-    blocks = [block.split('\n') for block in chars.split('\n\n')]
-    blocks = [make_lines(block) for block in blocks]
-    return blocks
-
-def make_notes(files):
-    notes = []
-
-    for file in files:
-        chars = open(file).read()
-        blocks = make_blocks(chars)
-        notes.extend(filter(bool, (N.notify(file, line) for line in blocks)))
-
-    return notes
-
-def print_note(note: dict):
-    print('[head]', note['head'])
-    for line in note['file']:
-        print('[file]', line)
-    for line in note['body']:
-        print('[body]', line)
-
-def write_notes_to_database(notes):
-    for note in notes:
-        note.print()
-        nodes, edges = N.write(note)
-        for node in nodes:
-            print('[node]', node)
-        for edge in edges:
-            print('[edge]', edge)
-    print()
-
-def print_heads(notes):
-    for note in notes:
-        print()
-        print(note.head)
-    print()
-
-def print_notes(notes):
-    for note in notes:
-        print()
-        print()
-
-        print('>>>> %s' % note.head)
-        head, body = parse.note(note.head, note.body)
-        for edge in (head.edges or []):
-            print('     %s' % str(edge))
-
-        for line, limb in zip(note.body, body):
-            print('>>>> %s' % line)
-            for edge in (limb.edges or []):
-                print('     %s' % str(edge))
-
-    print()
-    print()
-
-def print_parse(parsed):
-    width = max(len(key) for key in parsed._fields)
-    print()
-
-    for key, val in parsed._asdict().items():
-        first = True
-        key = str(key).ljust(width)
-        print(' '.ljust(width) + ' |')
-
-        if isinstance(val, list):
-            for _ in val:
-                if first:
-                    print('%s |' % key + (' %s' % (_,)))
-                    first = False
-                else:
-                    print(' '.ljust(width) + ' |'  + (' %s' % (_,)))
-
-        else:
-            print('%s | %s' % (key, val))
-
-    print()
-
 def main():
     args = get_args()
 
@@ -171,8 +83,8 @@ def main():
     if args.parse:
         args.files = [args.parse]
 
-    files = args.files if args.files else get_dropbox_notes()
-    notes = make_notes(files)
+    files = disk.make_files(args.files)
+    notes = N.make_notes(files)
 
     if args.destroy:
         if args.test: h1('DESTROY')
@@ -188,7 +100,7 @@ def main():
 
     if args.write:
         if args.test: h1('WRITE')
-        write_notes_to_database(notes)
+        N.write_notes_to_database(notes)
 
     if args.p:
         head, _ = parse.note(args.p)
@@ -216,7 +128,7 @@ def main():
 
     if args.note:
         if args.test: h1('NOTES')
-        print_notes(notes)
+        N.print_notes(notes)
 
     if args.visualize:
         db.collection = db.database[args.visualize]
