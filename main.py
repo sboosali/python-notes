@@ -49,7 +49,7 @@ def get_args():
                       help='destroy all documents in "notes" collection')
     args.add_argument('--visualize',
                       type=str,
-                      default='notes',
+                      default='',
                       help='visualize a collection in the database by printing json for d3')
 
     args.add_argument('-p',
@@ -226,8 +226,4 @@ def main():
 
 
 if __name__=='__main__':
-    try:
-        main()
-    finally:
-        # db.untest()
-        pass
+    main()

@@ -1,9 +1,61 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<!--
+file:///Users/sambo/notes/visualization.html
+-->
 <style>
 
-html, body { margin:0; padding:0; overflow:hidden }
-svg { position:fixed; top:0; left:0; height:100%; width:100% }
+html, body {
+	margin:0;
+	padding:0;
+	overflow:hidden
+}
+
+svg {
+	position: absolute;
+
+	top:0%;
+	height:100%;
+
+	left:0%;
+	width:80%
+}
+
+.notes, textarea, input[type=text] {
+	position: absolute;
+
+	top:0%;
+	height:90%;
+
+	left:80%;
+	width:20%;
+
+	background-color: white;
+  border: 1px solid black;
+}
+
+.query, input[type=submit] {
+	position: absolute;
+
+	top:90%;
+	height:10%;
+
+	left:80%;
+	width:20%;
+
+	text-align: justify;
+	font-size: 1.6vw;
+	text-align: center;
+	vertical-align: middle;
+
+	background-color: white;
+  border: 1px solid black;
+}
+
+/* :hover {
+	background-color: lightblue;
+}
+ */
 
 .node {
   fill: black;
@@ -16,6 +68,7 @@ svg { position:fixed; top:0; left:0; height:100%; width:100% }
 .link {
   stroke: gray;
   stroke-opacity: .6;
+  stroke-width: 10;
 }
 
 .link:hover {
@@ -29,10 +82,25 @@ svg { position:fixed; top:0; left:0; height:100%; width:100% }
 
 </style>
 <body>
+
+<form>
+<textarea class="notes"></textarea>
+<!-- <div class="query"><input type="submit" value="Note!"/></div> -->
+<div class="query">parse notes and draw graph</div>
+</form>
+
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="fisheye.js"></script>
-<script>
 
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.3.1/jquery.min.js"></script>
+
+<script>
+$('.query').click(function() {
+	$('.query').css('background-color', 'lightgreen');
+});
+</script>
+
+<script>
 var width = 960;
 var height = 500;
 
@@ -40,9 +108,10 @@ var svg = d3.select("body").append("svg")
     .attr("width", width)
     .attr("height", height);
 
+//
 
 var force = d3.layout.force()
-    .charge(-1000)
+    .charge(-400)
     .linkDistance(30)
     .size([width, height]);
 
@@ -54,11 +123,24 @@ function dragstart(d) {
 var drag = force.drag()
     .on("dragstart", dragstart);
 
+//
 
 var fisheye = d3.fisheye.circular()
     .radius(200)
-    .distortion(2);
+    .distortion(10);
 
+function font_size (d) {
+    return d.fisheye.z * 30
+}
+
+function stroke_width (d) {
+    var s = d.source.fisheye.z;
+    var t = d.target.fisheye.z;
+    var z = Math.max(s, t);
+    return z * 10;
+}
+
+//
 
 function visualize(error, graph) {
   force
@@ -84,17 +166,20 @@ function visualize(error, graph) {
 
   node.text(function(d) { return d.name; });
 
+  //
+
   function tick() {
     node.each(function(d) { d.fisheye = fisheye(d); });
 
     node.attr("x", function(d) { return d.fisheye.x; })
         .attr("y", function(d) { return d.fisheye.y; })
-        .attr('font-size', function(d) { return Math.pow(d.fisheye.z, 3) * 30 })
+        .attr('font-size', font_size)
 
     link.attr("x1", function(d) { return d.source.fisheye.x; })
         .attr("y1", function(d) { return d.source.fisheye.y; })
         .attr("x2", function(d) { return d.target.fisheye.x; })
-        .attr("y2", function(d) { return d.target.fisheye.y; });
+        .attr("y2", function(d) { return d.target.fisheye.y; })
+        .style('stroke-width', stroke_width);
   }
 
   svg.on("mousemove", function() {

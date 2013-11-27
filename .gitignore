@@ -5,6 +5,7 @@
 #*#
 .#*
 
+.DS_STORE
 __pycache__
 ignore
 TODO

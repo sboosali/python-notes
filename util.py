@@ -280,6 +280,11 @@ def pairs(xs):
     for ys in itertools.combinations(xs, 2):
         yield ys
 
+def callgraph(f):
+    import pycallgraph
+    with pycallgraph.PyCallGraph(output=pycallgraph.output.GraphvizOutput()):
+        f()
+
 
 if __name__ == "__main__":
     import doctest
