@@ -3,258 +3,32 @@
 <!--
 file:///Users/sambo/notes/visualization.html
 -->
-<style>
+<head>
 
-html, body {
-	margin:0;
-	padding:0;
-	overflow:hidden
-}
-
-svg {
-	position: absolute;
-
-	top:0%;
-	height:90%;
-
-	left:0%;
-	width:80%
-}
-
-.show {
-	position: absolute;
-
-	top:90%;
-	height:10%;
-
-	left:0%;
-	width:80%;
-
-	background-color: white;
-  border: 1px solid black;
-
-	text-align: justify;
-	font-size: 3vw;
-	text-align: center;
-	vertical-align: middle;
-}
-
-/* */
-
-.notes, textarea, input[type=text] {
-	position: absolute;
-
-	top:0%;
-	height:90%;
-
-	left:80%;
-	width:20%;
-
-	font-size: 2vw;
-	background-color: white;
-  border: 1px solid black;
-}
-
-.query, input[type=submit] {
-	position: absolute;
-
-	top:90%;
-	height:10%;
-
-	left:80%;
-	width:20%;
-
-	text-align: justify;
-	font-size: 1.6vw;
-	text-align: center;
-	vertical-align: middle;
-
-	background-color: white;
-  border: 1px solid black;
-}
-
-/* */
-
-.node {
-  fill: black;
-}
-
-.node:hover {
-  fill: blue;
-}
-
-.link {
-  stroke: gray;
-  stroke-opacity: .6;
-  stroke-width: 10;
-}
-
-.link:hover {
-  stroke: blue;
-  stroke-opacity: .6;
-}
-
-.fixed {
-  fill: blue
-}
-
-</style>
-<body>
-
-<form>
-<textarea class="notes"></textarea>
-<!-- <div class="query"><input type="submit" value="parse notes and draw graph"></div> -->
-<div class="query">parse notes and draw graph</div>
-</form>
-
-<div class="show"></div>
+<link rel="stylesheet" type="text/css" href="visualization.css">
 
 <script src="d3.v3.min.js"></script>
 <script src="fisheye.js"></script>
 
-<script src="jquery.min.js"></script>
+<script src="jquery-2.0.3.min.js"></script>
 
-<script>
-$('.query').click(function() {
-	$('.query').css('background-color', 'lightgreen');
-});
-</script>
-
-<script>
-var width = 960;
-var height = 500;
-
-var svg = d3.select("body").append("svg")
-    .attr("width", width)
-    .attr("height", height);
-
-//
-
-var force = d3.layout.force()
-    .charge(-400)
-    .linkDistance(30)
-    .size([width, height]);
-
-function dragstart(d) {
-  d.fixed = true;
-  d3.select(this).classed("fixed", true);
-}
-
-var drag = force.drag()
-    .on("dragstart", dragstart);
-
-//
-
-var fisheye = d3.fisheye.circular()
-    .radius(200)
-    .distortion(10);
-
-function font_size (d) {
-    return d.fisheye.z * 30
-}
-
-function stroke_width (d) {
-    var s = d.source.fisheye.z;
-    var t = d.target.fisheye.z;
-    var z = Math.max(s, t);
-    return z * 10;
-}
-
-//
-
-var show = '(hover over a node/link to see it here. click on it to stick it.)';
-$('.show').text(show);
-
-function verbalize (d) {
-	return d.source.name + ' ' + d.name + ' ' + d.target.name;
-}
-
-function enter_link (d) {
-	$('.show').text(verbalize(d));
-}
-
-function leave_link() {
-	$('.show').text(show);
-}
+</head>
 
 
-function enter_node (d) {
-	$('.show').text(d.name);
-}
+<body>
 
-function leave_node() {
-	$('.show').text(show);
-}
+<svg></svg>
 
-function click_node (d) {
-	show = d.name;
-	$('.show').text(show);
-}
+<div class="params">
+<textarea class="param" id="radius">200</textarea>
+</div>
 
-function click_link (d) {
-	show = verbalize(d);
-	$('.show').text(show);
-}
+<form>
+<textarea class="notes"></textarea>
+<!-- <div class="query"><input type="submit" value="parse notes and draw graph"></div> -->
+<table><td class="query">parse notes and draw graph</td></table>
+</form>
 
-//
+<div class="show">(hover over a node/link to see it here. click to make it stick.)</div>
 
-function visualize(error, graph) {
-  force
-      .nodes(graph.nodes)
-      .links(graph.links)
-      .start();
-
-  var link = svg.selectAll(".link")
-      .data(graph.links)
-    .enter().append("line")
-
-  link
-      .attr("class", "link")
-      .style("stroke-width", function(d) { return 10; });
-
-  var node = svg.selectAll(".node")
-      .data(graph.nodes).enter().append("text");
-
-  node
-      .attr("class", "node")
-      .attr('text-anchor', "middle")
-      .call(drag);
-
-  node.text(function(d) { return d.name; });
-
-	node.on('mouseenter', enter_node);
-	node.on('mouseleave', leave_node);
-	node.on('click', click_node)
-
-	link.on('mouseenter', enter_link);
-	link.on('mouseleave', leave_link);
-	link.on('click', click_link);
-
-  //
-
-  function tick() {
-    node.each(function(d) { d.fisheye = fisheye(d); });
-
-    node.attr("x", function(d) { return d.fisheye.x; })
-        .attr("y", function(d) { return d.fisheye.y; })
-        .attr('font-size', font_size)
-
-    link.attr("x1", function(d) { return d.source.fisheye.x; })
-        .attr("y1", function(d) { return d.source.fisheye.y; })
-        .attr("x2", function(d) { return d.target.fisheye.x; })
-        .attr("y2", function(d) { return d.target.fisheye.y; })
-        .style('stroke-width', stroke_width);
-  }
-
-  svg.on("mousemove", function() {
-    fisheye.focus(d3.mouse(this));
-    tick();
-  });
-
-  force.on("tick", tick);
-
-};
-
-d3.json("visualization.json", visualize);
-
-</script>
+<script src="visualization.js"></script>
