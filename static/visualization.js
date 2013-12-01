@@ -32,16 +32,11 @@ var force = d3.layout.force()
 
 //
 
-function Radius() {
-	return parseInt(d3.select("#radius").text());
-}
-
 var distortion = 100;
+var radius = 100;
 var fisheye = d3.fisheye.circular()
     .distortion(distortion)
-		.radius(Radius());
-
-$('textarea').on('change', Radius);
+		.radius(radius);
 
 //
 
@@ -85,31 +80,31 @@ function y(_, cy) { return cy;}
 
 //
 
-var show = $('.show').text();
+var show = d3.select('.show').text();
 
 function verbalize (d) {
 	return d.source.name + ' ' + d.name + ' ' + d.target.name;
 }
 
 function enter_link (d) {
-	$('.show').text(verbalize(d));
+	d3.select('.show').text(verbalize(d));
 }
 
 function enter_node (d) {
-	$('.show').text(d.name);
+	d3.select('.show').text(d.name);
 }
 
 function leave_link() {
-	$('.show').text(show);
+	d3.select('.show').text(show);
 }
 
 function leave_node() {
-	$('.show').text(show);
+	d3.select('.show').text(show);
 }
 
 function click_link (d) {
 	show = verbalize(d);
-	$('.show').text(show);
+	d3.select('.show').text(show);
 
 	var link = d3.select(this);
 }
@@ -118,7 +113,7 @@ function click_node (d) {
 	var node = d3.select(this);
 
 	show = d.name;
-	$('.show').text(show);
+	d3.select('.show').text(show);
 
 	var transition = node.transition().duration(100);
 
@@ -135,7 +130,11 @@ function click_node (d) {
 
 //
 
-function visualize(error, graph) {
+function visualize(error, response) {
+	var graph = JSON.parse(response.responseText);
+
+	force.nodes([]).links([]);
+
   force
       .nodes(graph.nodes)
       .links(graph.links)
@@ -194,4 +193,26 @@ function visualize(error, graph) {
 
 };
 
-d3.json("visualization.json", visualize);
+//
+
+function Notes(notes) {
+	// getter/setter
+	if(typeof(notes)!=='undefined') {
+		$('.notes').val(notes);
+	}
+	return $('.notes').val();
+}
+
+d3.xhr('example.note', function (error, response) {
+	Notes(response.responseText);
+	draw();
+});
+
+function draw() {
+	var notes = {'notes': Notes()};
+	d3.xhr("/draw").post(JSON.stringify(notes), visualize);
+}
+
+d3.select('.query').on('click', draw);
+
+//

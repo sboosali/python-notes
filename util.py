@@ -320,6 +320,14 @@ def print_parse(parsed):
 
     print()
 
+@decorator
+def filtered(f, predicate=bool):
+    def g(*args, **kwargs):
+        for _ in f(*args, **kwargs):
+            if predicate(_):
+                yield _
+    return g
+
 
 if __name__ == "__main__":
     import doctest

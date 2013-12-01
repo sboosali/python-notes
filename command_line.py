@@ -75,15 +75,16 @@ def main():
         print('= = = = = = = = TESTING = = = = = = = =')
         print('= = = = = = = = = = = = = = = = = = = = ')
         print()
-        args.files = ['test.note']
+        args.files = ['test/example.note']
         args.note = True
         args.write = True
+        args.visualize = True
         db.test()
 
     if args.parse:
         args.files = [args.parse]
 
-    files = disk.make_files(args.files)
+    files = disk.read_files(args.files)
     notes = N.make_notes(files)
 
     if args.destroy:
@@ -131,10 +132,11 @@ def main():
         N.print_notes(notes)
 
     if args.visualize:
-        db.collection = db.database[args.visualize]
+        if args.test: h1('GRAPH')
         nodes, edges = db.graph()
         graph = visualization.logic_graph_to_visual_graph(nodes, edges)
         print(graph)
+        print()
 
 
 if __name__=='__main__':

@@ -17,17 +17,42 @@ def is_line(line):
 def make_lines(block):
     return [line.strip() for line in block if is_line(line)]
 
-def make_blocks(chars):
-    blocks = [block.split('\n') for block in chars.split('\n\n')]
+@typecheck
+def read(text: str, as_note=False) -> list:
+    '''
+
+    >>> text = """
+    ...
+    ... A
+    ... x
+    ...
+    ... B
+    ... y
+    ... z
+    ...
+    ... """
+    >>> read(text)
+    [['A', 'x'], ['B', 'y', 'z']]
+    >>> read(text, as_note=True)
+    [Note(head='A', body=['x'], file=''), Note(head='B', body=['y', 'z'], file='')]
+
+    '''
+
+    blocks = [block.split('\n') for block in text.split('\n\n')]
     blocks = [make_lines(block) for block in blocks]
+    blocks = [block for block in blocks if block]
+
+    if as_note:
+        notes = [Note(head, body) for head, *body in blocks]
+        return notes
+
     return blocks
 
 def make_notes(files):
     notes = []
 
-    for file in files:
-        chars = open(file).read()
-        blocks = make_blocks(chars)
+    for file, chars in files:
+        blocks = read(chars)
         notes.extend(filter(bool, (notify(file, line) for line in blocks)))
 
     return notes
@@ -60,6 +85,7 @@ class Note:
     def __bool__(self):
         return bool(self.head.strip())
     def __repr__(self):
+        #TODO fields = OrderedDict(self) # show only if truthy like Op
         return 'Note(head=%r, body=%r, file=%r)' % (self.head, self.body, self.file)
     def __hash__(self):
         return hash(self.head)
@@ -157,3 +183,8 @@ def print_notes(notes):
 
     print()
     print()
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

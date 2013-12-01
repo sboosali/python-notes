@@ -57,7 +57,7 @@ def save(*edge, collection=None):
     >>> db.untest()
 
     '''
-    if not collection: collection = db.collection
+    if not collection: collection = db.collection()
 
     label, *nodes = edge
     if is_node(edge):
@@ -66,7 +66,7 @@ def save(*edge, collection=None):
         save_edge(edge, collection=collection)
 
 def save_edge(edge, collection=None):
-    if not collection: collection = db.collection
+    if not collection: collection = db.collection()
     label, *nodes = edge
 
     query = {'edge': label}
@@ -77,7 +77,7 @@ def save_edge(edge, collection=None):
         save_node(node, edge, collection)
 
 def save_node(node, edge=None, collection=None):
-    if not collection: collection = db.collection
+    if not collection: collection = db.collection()
 
     query = {'node': node}
     update = {'$addToSet': {'edges': edge}} if edge else {}

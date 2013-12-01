@@ -12,8 +12,6 @@ a , b , c < x . y . z where 1 + 2 + 3
 
 circle < n-sphere where n=1
 
-[context]
-
 http://host.com/page.html?param=value
 
 5-HT
@@ -29,5 +27,3 @@ tilt head
 50%s
 
 piracetam -> + ACh -> smarter
-
-3   =   1+2 * 3+4   /   7

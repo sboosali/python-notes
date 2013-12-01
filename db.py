@@ -9,28 +9,42 @@ port = config.db['mongo_port']
 
 client = pymongo.MongoClient(host, port)
 database = client.notes
-collection = database.notes
-test_collection = database.test
 
-collection.create_index('node')
-collection.create_index('edge')
+_default_collection = 'notes'
+_test_collection = 'test'
+_collection = _default_collection
 
 def test():
-    global test_collection
-    global collection
-    collection = test_collection
+    collection(_test_collection)
 
 def untest():
-    test_collection.remove()
+    collection(_test_collection).remove()
+    collection(_default_collection)
+
+def collection(name :str =None) -> 'Collection':
+    ''': box'''
+    global _collection
+
+    # setter
+    if name is not None:
+        _collection = name
+
+    # getter
+    return database[_collection]
+
+collection().create_index('node')
+collection().create_index('edge')
+
+# # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def find(query=None, **kwargs):
     if query is None: query = {}
     fields = dict_merge({'_id': False}, kwargs.pop('fields', {}))
-    return list(collection.find(query, fields=fields, **kwargs))
+    return list(collection().find(query, fields=fields, **kwargs))
 
 def find_one(query, **kwargs):
     fields = dict_merge({'_id': False}, kwargs.pop('fields', {}))
-    return collection.find_one(query, fields={'_id': False}, **kwargs)
+    return collection().find_one(query, fields={'_id': False}, **kwargs)
 
 def stats():
     """(all sizes in bytes)"""
@@ -53,7 +67,7 @@ def graph():
 #     """
 #     select = {'head': {'$all': [head]}}
 #     exclude = {'_id':False}
-#     note = collection.find_one(select, exclude)
+#     note = collection().find_one(select, exclude)
 
 #     if note:
 #         note['head'] = head
@@ -68,8 +82,8 @@ def graph():
 # #     update = {'head': heads,
 # #               'body': body,
 # #               'file': file}
-# #     collection.update(select, update, upsert=True)
-# #     return collection.update(select, update, upsert=True, multi=True)
+# #     collection().update(select, update, upsert=True)
+# #     return collection().update(select, update, upsert=True, multi=True)
 
 # @typecheck
 # def put(head: str, body: list, file: str = ''):
@@ -80,8 +94,8 @@ def graph():
 #     select = {'head': {'$all': heads}}
 
 #     update = {'$addToSet': {'head': {'$each': heads}}}
-#     collection.update(select, update, upsert=True, multi=True)
+#     collection().update(select, update, upsert=True, multi=True)
 
 #     update = {'$addToSet': {'file': {'$each': files}},
 #               '$pushAll': {'body': body}}
-#     collection.update(select, update, multi=True)
+#     collection().update(select, update, multi=True)

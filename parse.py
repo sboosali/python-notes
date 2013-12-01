@@ -49,6 +49,7 @@ from tree import Tree
 import context
 import tokens
 import edge
+import notes
 
 
 Parsed = namedtuple('Parsed',
@@ -377,10 +378,31 @@ def body(parsed: Parsed, body_line: str) -> Parsed:
 
     return parse(line)
 
-def note(_head: str, _body: str= ()) -> (Parsed, Parsed):
-    _head = head(_head)
-    _body = [body(_head, line) for line in _body]
-    return _head, _body
+def attach(h, b):
+    return [h] + b
+
+@strict
+def edges(h: Parsed, b: Parsed) -> ['Edge']:
+    lines = attach(h, b)
+    for line in lines:
+        for edge in line.edges:
+            yield edge
+
+def note(h: str, b: str = (), as_edges=False) -> (Parsed, Parsed):
+    h = head(h)
+    b = [body(h, line) for line in b]
+
+    if as_edges: return edges(h, b)
+
+    return h, b
+
+def parse(text: str):
+    ''': notes => [Parsed]'''
+    for _ in notes.read(text, as_note=True):
+        head, body = note(_.head, _.body)
+
+        yield head
+        yield from body
 
 
 if __name__ == "__main__":

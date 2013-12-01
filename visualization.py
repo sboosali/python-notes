@@ -52,7 +52,7 @@ def logic_graph_to_visual_graph(nodes, edges) -> json:
     nodes = [{'name': node} for node in nodes]
     graph = {'nodes': nodes, 'links': links}
 
-    return json.dumps(graph)
+    return graph
 
 
 if __name__ == "__main__":
@@ -61,4 +61,4 @@ if __name__ == "__main__":
     # doctest.testmod()
 
     nodes, edges = db.graph()
-    print(logic_graph_to_visual_graph(nodes, edges))
+    pp(logic_graph_to_visual_graph(nodes, edges))
