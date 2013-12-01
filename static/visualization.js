@@ -28,7 +28,8 @@ var height = Height();
 var force = d3.layout.force()
     .charge(-2000)
     .linkDistance(30)
-    .size([width, height]);
+		//.gravity(0) //TODO box bound
+    .size([width, height]); //TODO
 
 var drag = force.drag();
 
@@ -110,12 +111,12 @@ function click_link (d) {
 }
 
 function click_node (d) {
-	var node = d3.select(this);
+	var elem = d3.select(this);
 
 	show = d.name;
 	d3.select('.show').text(show);
 
-	var transition = node.transition().duration(100);
+	var transition = elem.transition().duration(100);
 
 	transition
 		.attr('x', 0)
@@ -125,21 +126,48 @@ function click_node (d) {
 		.attr('fisheye', {'x': 0, 'y': 0, 'z': 1});
 
 	d.fixed = true;
-  node.classed("fixed", true);
+	elem.classed("fixed", true);
+}
+
+//
+
+var names = {};
+// stores old nodes
+// index nodes:[_] by _.name
+
+function merge(nodes) {
+	// keep existing position/momentum/fixedness
+	for (var i=0; i < nodes.length; i++) {
+
+		var next = nodes[i];
+		var prev = names[nodes[i].name]; // defaults to null
+		var node = $.extend(true, {}, next, prev); // merge old into new
+		nodes[i] = node;
+
+		names[node.name] = node;
+	}
+	return nodes;
+}
+
+function node_id (d){
+	return d.name;
+}
+
+function link_id (d){
+	var id = d.source.name +'___'+ d.name +'___'+ d.target.name;
+	return id;
 }
 
 //
 
 function start(node, link) {
 	link.enter().append("line");
-  link
-      .attr("class", "link")
+  link.attr("class", "link")
       .style("stroke-width", function(d) { return 10; });
 	link.exit().remove();
 
 	node.enter().append("text");
-  node
-      .attr("class", "node")
+  node.attr("class", "node")
       .attr('text-anchor', "middle")
       .call(drag);
 	node.exit().remove();
@@ -157,8 +185,17 @@ function start(node, link) {
 	force.start();
 }
 
+function fix (d,i){
+	// elem[<... class=".fixed" .../>] ~> datum[d.fixed]
+	if (d.fixed){
+		var elem = d3.select(this);
+		elem.classed("fixed", true);
+	}
+}
+
 function tick(node, link) {
-  node.each(function(d) { d.fisheye = fisheye(d); });
+	node.each(function(d) { d.fisheye = fisheye(d); })
+			.each(fix);
 
 	node.attr("x", function (d) { return x(this, d.fisheye.x); })
 			.attr("y", function (d) { return y(this, d.fisheye.y); })
@@ -171,19 +208,24 @@ function tick(node, link) {
 			.style('stroke-width', stroke_width);
 }
 
-function visualize(error, response) {
-	var graph = JSON.parse(response.responseText);
+//
 
-	force.nodes(graph.nodes).links(graph.links);
+function visualize(error, graph) {
 
-  var node = svg.selectAll(".node").data(force.nodes());
-	var link = svg.selectAll(".link").data(force.links());
+	merge(graph.nodes);
+
+	force.nodes(graph.nodes).links(graph.links).start();
+	// force.start() initializes link.source and link.target
+	// from an index into the node array, to an element inside the node array
+
+	var node = svg.selectAll(".node").data(force.nodes(), node_id);
+	var link = svg.selectAll(".link").data(force.links(), link_id);
 
 	start(node, link);
 
 	svg.on("mousemove", function() {
 		fisheye.focus(d3.mouse(this));
-    tick();
+    tick(node, link);
   });
 
 	force.on("tick", function() { tick(node, link) });
@@ -200,16 +242,22 @@ function Notes(notes) {
 	return $('.notes').val();
 }
 
-d3.xhr('notes/singers.note', function (error, response) {
-	Notes(response.responseText);
-	draw();
-});
-
 function draw() {
 	var notes = {'notes': Notes()};
-	d3.xhr("/draw").post(JSON.stringify(notes), visualize);
+	var request = JSON.stringify(notes);
+	d3.xhr("/draw").post(request, function (error, response) {
+		var graph = JSON.parse(response.responseText);
+		visualize(error, graph);
+	})
 }
 
 d3.select('.query').on('click', draw);
 
 //
+
+d3.xhr('notes/singers.note', function (error, response) {
+	Notes(response.responseText);
+	draw();
+});
+
+//TODO localstorage
