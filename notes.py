@@ -1,6 +1,6 @@
 from util import *
 import parse
-import graph
+import Graph
 import query
 import syntax
 
@@ -127,10 +127,10 @@ def write(note):
     nodes, edges = partition_arcs(arcs)
 
     for node in nodes:
-        graph.save_node(node)
+        Graph.save_node(node)
 
     for edge in edges:
-        graph.save_edge(edge)
+        Graph.save_edge(edge)
 
     return nodes, edges
 

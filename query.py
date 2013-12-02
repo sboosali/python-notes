@@ -40,9 +40,9 @@ def get(line):
     '''
 
     >>> db.test()
-    >>> import graph
-    >>> graph.save('causes', 'piracetam', '+ ACh')
-    >>> graph.save('causes', 'choline', '+ ACh')
+    >>> import Graph
+    >>> Graph.save('causes', 'piracetam', '+ ACh')
+    >>> Graph.save('causes', 'choline', '+ ACh')
 
     >>> list(get('piracetam'))
     [['causes', 'piracetam', '+ ACh']]
