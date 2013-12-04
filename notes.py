@@ -119,9 +119,9 @@ def partition_arcs(arcs):
 def write(note):
     head, body = parse.note(note.head, note.body)
 
-    arcs = head.graph.edges
+    arcs = head.edges
     for limb in body:
-        for arc in limb.graph.edges:
+        for arc in limb.edges:
             arcs.append(arc)
 
     nodes, edges = partition_arcs(arcs)
@@ -173,12 +173,12 @@ def print_notes(notes):
 
         print('>>>> %s' % note.head)
         head, body = parse.note(note.head, note.body)
-        for edge in (head.graph.edges or []):
+        for edge in (head.edges or []):
             print('     %s' % str(edge))
 
         for line, limb in zip(note.body, body):
             print('>>>> %s' % line)
-            for edge in (limb.graph.edges or []):
+            for edge in (limb.edges or []):
                 print('     %s' % str(edge))
 
     print()

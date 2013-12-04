@@ -55,7 +55,7 @@ def get(line):
     '''
 
     parsed = parse.head(line)
-    variable_edges, constant_nodes, constant_edges = querify(parsed.graph.edges)
+    variable_edges, constant_nodes, constant_edges = querify(parsed.edges)
 
     for node in constant_nodes:
         hypernode = db.find_one({'node': node})

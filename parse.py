@@ -45,9 +45,13 @@ import context
 import Graph
 import Edge
 import notes
+import Line
 
 
-Parsed = namedtuple('Parsed', 'line cst ast graph head parser')
+Parsed = namedtuple(
+    'Parsed',
+    'line cst ast nodes edges head parser'
+)
 
 parsers = {}
 @decorator
@@ -73,21 +77,21 @@ def default(line):
     '''
     cst = CST(line)
     ast = AST(cst)
-    head, graph = Graph.Graph.harvest(ast)
-    return Parsed(line, cst, ast, graph, head, 'default')
+    head, (nodes, edges) = Graph.Graph.harvest(ast)
+    return Parsed(line, cst, ast, nodes, edges, head, 'default')
 
 @parser
 def ellipsis(line):
     '''doesn't parse the head, only changes how the body is parsed.
     '''
     _ = None
-    return Parsed(line, (), (), Graph.Graph(), line, 'ellipsis')
+    return Parsed(line, (), (), [], [], line, 'ellipsis')
 
 @parser
 def comment(line):
     '''don't parse'''
     _ = None
-    return Parsed(line, (), (), Graph.Graph(), line, 'comment')
+    return Parsed(line, (), (), [], [], line, 'comment')
 
 @typecheck
 def head(line: str) -> Parsed:
@@ -131,7 +135,7 @@ def attach(h, b):
 def edges(h: Parsed, b: Parsed) -> [Edge]:
     lines = attach(h, b)
     for line in lines:
-        for edge in line.graph.edges:
+        for edge in line.edges:
             yield edge
 
 def note(h: str, b: str = (), as_edges=False) -> (Parsed, Parsed):
@@ -142,7 +146,7 @@ def note(h: str, b: str = (), as_edges=False) -> (Parsed, Parsed):
 
     return h, b
 
-def parse(text: ['Note']) -> [Parsed]:
+def parse(text: str) -> [Parsed]:
     '''
     '''
     for _ in notes.read(text, as_note=True):

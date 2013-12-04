@@ -49,8 +49,8 @@ def draw_graph():
 
 def _draw_graph(text):
     parseds = list(parse.parse(text))
-    edges = remove_duplicates(edge for _ in parseds for edge in _.graph.edges)
-    nodes = remove_duplicates(node for _ in parseds for node in _.graph.nodes)
+    edges = remove_duplicates(edge for _ in parseds for edge in _.edges)
+    nodes = remove_duplicates(node for _ in parseds for node in _.nodes)
     graph = visualization.logic_graph_to_visual_graph(nodes, edges)
     return graph
 
