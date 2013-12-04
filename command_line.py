@@ -111,9 +111,9 @@ def main():
         print()
         for note in notes:
             head, body = parse.note(note.head, note.body)
-            print(head.edges)
+            print(head.graph.edges)
             for limb in body:
-                print(limb.edges)
+                print(limb.graph.edges)
             print()
 
     if args.get:

@@ -33,7 +33,9 @@ import Edge
 
 class Graph(tuple):
 
-    def __new__(cls, nodes, edges):
+    def __new__(cls, nodes=None, edges=None):
+        if nodes is None: nodes = []
+        if edges is None: edges = []
         self = super().__new__(cls, (nodes, edges))
         self.nodes = nodes
         self.edges = edges
