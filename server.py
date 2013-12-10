@@ -14,7 +14,7 @@ import flask
 from flask import request
 
 from util import *
-import notes
+import notes as N
 import parse
 import visualization
 
@@ -22,36 +22,60 @@ import visualization
 app = flask.Flask('Notes', static_folder='static', static_url_path='')
 
 @app.route('/parse', methods=['POST'])
-def parse_notes():
+def API_parse_notes():
     '''
 
-    e.g.
-    curl  "http://127.0.0.1:5000/parse"  -H "Content-Type:text/json"  -d @test.json
+    $
+    curl  "http://127.0.0.1:5000/parse"  -H "Content-Type:text/json"  -d '{"notes": "\n\nA2\n= x3\n: y4\n\nB6\n~ z7\n"}'
 
     '''
     text = request.get_json(force=True)['notes']
-    response = _parse_notes(text)
+    edges = parse_notes(text)
+    response = {'edges': edges}
     return flask.jsonify(**response)
 
-def _parse_notes(text):
-    edges = []
-    for note in notes.read(text):
-        head, *body = note
-        arcs = parse.note(head, body, as_edges=True)
-        edges.extend(arcs)
-    return {'edges': edges}
+@strict
+def parse_notes(text):
+    for edge in text_to_edges(text):
+        yield edge_to_json(edge)
+
+def text_to_edges(text):
+    for note in N.read(text):
+        lines = parse.note(note, lines=True)
+        yield from parse.edges(lines)
+
+def edge_to_json(edge):
+    lineno = edge.line.lineno
+    return {'edge': edge, 'lineno': lineno}
 
 @app.route('/draw', methods=['POST'])
-def draw_graph():
+def API_draw_graph():
+    '''
+
+    $
+    curl  "http://127.0.0.1:5000/draw"  -H "Content-Type:text/json"  -d '{"notes": "\n\nA2\n= x3\n: y4\n\nB6\n~ z7\n"}'
+
+    '''
     text = request.get_json(force=True)['notes']
-    response = _draw_graph(text)
+    response = draw_graph(text)
     return flask.jsonify(**response)
 
-def _draw_graph(text):
-    parseds = list(parse.parse(text))
-    edges = remove_duplicates(edge for _ in parseds for edge in _.graph.edges)
-    nodes = remove_duplicates(node for _ in parseds for node in _.graph.nodes)
+def draw_graph(text):
+    return text_to_graph(text)
+
+def line_to_edges(line):
+    edges = line.graph.edges
+    for edge in edges:
+        edge.line = line.line
+        yield edge
+
+def text_to_graph(text):
+    lines = list(parse.parse(text))
+
+    edges = [edge for line in lines for edge in line_to_edges(line)]
+    nodes = remove_duplicates(node for line in lines for node in line.graph.nodes)
     graph = visualization.logic_graph_to_visual_graph(nodes, edges)
+
     return graph
 
 

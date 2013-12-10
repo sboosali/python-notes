@@ -1,61 +1,13 @@
+import re
+import io
+
 from util import *
 import parse
 import Graph
 import query
 import syntax
+from Line import Line
 
-
-sep = '\n\n'
-div = '-  -  -  -  -  -  -  -  -  -  -  -  -  -  -'
-
-def is_div(line):
-    return ('-----' in line) or ('- - -' in line) or ('-  -  -' in line)
-
-def is_line(line):
-    return line.strip() and not is_div(line)
-
-def make_lines(block):
-    return [line.strip() for line in block if is_line(line)]
-
-@typecheck
-def read(text: str, as_note=False) -> list:
-    '''
-
-    >>> text = """
-    ...
-    ... A
-    ... x
-    ...
-    ... B
-    ... y
-    ... z
-    ...
-    ... """
-    >>> read(text)
-    [['A', 'x'], ['B', 'y', 'z']]
-    >>> read(text, as_note=True)
-    [Note(head='A', body=['x'], file=''), Note(head='B', body=['y', 'z'], file='')]
-
-    '''
-
-    blocks = [block.split('\n') for block in text.split('\n\n')]
-    blocks = [make_lines(block) for block in blocks]
-    blocks = [block for block in blocks if block]
-
-    if as_note:
-        notes = [Note(head, body) for head, *body in blocks]
-        return notes
-
-    return blocks
-
-def make_notes(files):
-    notes = []
-
-    for file, chars in files:
-        blocks = read(chars)
-        notes.extend(filter(bool, (notify(file, line) for line in blocks)))
-
-    return notes
 
 class Note:
     '''
@@ -78,15 +30,18 @@ class Note:
         self.body = [line.strip() for line in body if line.strip()]
 
     def __iter__(self):
-        '''for `dict()`'''
-        yield 'head', self.head
-        yield 'body', self.body
-        yield 'file', self.file
+        '''Note : {head: str, body: [str]} => [str]'''
+        yield self.head
+        yield from self.body
     def __bool__(self):
         return bool(self.head.strip())
     def __repr__(self):
         #TODO fields = OrderedDict(self) # show only if truthy like Op
-        return 'Note(head=%r, body=%r, file=%r)' % (self.head, self.body, self.file)
+        #TODO but ** casts to (unordered) dict
+        if not self.file:
+            return 'Note(head=%r, body=%r)' % (self.head, self.body)
+        else:
+            return 'Note(head=%r, body=%r, file=%r)' % (self.head, self.body, self.file)
     def __hash__(self):
         return hash(self.head)
     def __cmp__(self, other):
@@ -99,9 +54,94 @@ class Note:
         for line in self.body:
             print('[body]', line)
 
-    @property
-    def lines(self):
-        return [self.head] + self.body
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+sep = '\n\n'
+div = '-  -  -  -  -  -  -  -  -  -  -  -  -  -  -'
+
+def is_div(line):
+    return ('-----' in line) or ('- - -' in line) or ('-  -  -' in line)
+
+def is_line(line):
+    return line.strip() and not is_div(line)
+
+def make_lines(block):
+    return [line.strip() for line in block if is_line(line)]
+
+@strict
+def number_lines(file: [Note]) -> [Note]:
+    linenos = count()
+    for note in file:
+        yield [Line.Line(line, lineno=next(linenos)) for line in note]
+
+whitespace_regex = r'^\s*$'
+def is_white(line):
+    '''
+    # >>> is_white("")
+    # True
+    # >>> is_white("\n\t\r ")
+    # True
+    # >>> is_white("\n\t\r x")
+    # False
+    '''
+    return bool(re.search(whitespace_regex, line))
+
+def is_sep(line):
+    return is_white(line) or is_div(line)
+
+def read(text: str, file='') -> [Note]:
+    '''
+
+    >>> text = """
+    ...
+    ... A2
+    ... = x3
+    ... : y4
+    ...
+    ... B6
+    ... ~ z7
+    ...
+    ... """
+
+    >>> for note in read(text): print(note)
+    Note(head=Line('A2', lineno=2), body=[Line('= x3', lineno=3), Line(': y4', lineno=4)])
+    Note(head=Line('B6', lineno=6), body=[Line('~ z7', lineno=7)])
+
+    '''
+    # before
+    lines = io.StringIO(text).readlines()
+    block = []
+
+    # during
+    for lineno, line in enumerate(lines):
+        line = Line(line.strip(), lineno=lineno, file=file)
+        if line:
+            block.append(line)
+
+        if is_sep(line):
+            if block:
+                head, *body = block
+                note = Note(head=head, body=body, file=file)
+                yield note
+            block = []
+
+    # after
+    #HACK need better pattern than "reset and last"
+    if block:
+        head, *body = block
+        note = Note(head=head, body=body, file=file)
+        yield note
+
+def make_notes(files):
+    notes = []
+
+    for file, chars in files:
+        blocks = read(chars)
+        notes.extend(filter(bool, (notify(file, line) for line in blocks)))
+
+    return notes
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def notify(file, lines):
     """makes Notes"""
@@ -111,19 +151,17 @@ def notify(file, lines):
     return note
 
 def partition_arcs(arcs):
+    '''
+    : edges => nodes, edges
+    '''
     _, edges = partition(is_node, arcs)
     edges = list(edges)
     nodes = list({node for _, *nodes in edges for node in nodes})
     return nodes, edges
 
 def write(note):
-    head, body = parse.note(note.head, note.body)
-
-    arcs = head.graph.edges
-    for limb in body:
-        for arc in limb.graph.edges:
-            arcs.append(arc)
-
+    lines = parse.note(note, lines=True)
+    arcs = parse.edges(lines)
     nodes, edges = partition_arcs(arcs)
 
     for node in nodes:
@@ -172,7 +210,7 @@ def print_notes(notes):
         print()
 
         print('>>>> %s' % note.head)
-        head, body = parse.note(note.head, note.body)
+        head, body = parse.note(note)
         for edge in (head.graph.edges or []):
             print('     %s' % str(edge))
 

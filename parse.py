@@ -44,7 +44,8 @@ import config
 import context
 import Graph
 import Edge
-import notes
+import notes as N
+from Line import Line
 
 
 Parsed = namedtuple('Parsed', 'line cst ast graph head parser')
@@ -71,7 +72,7 @@ def default(line):
     ast ~ clean up and binarize the Binop subtrees
     graph ~ get edges from the parse tree
     '''
-    cst = CST(line)
+    cst = CST(line.line)
     ast = AST(cst)
     head, graph = Graph.Graph.harvest(ast)
     return Parsed(line, cst, ast, graph, head, 'default')
@@ -90,7 +91,7 @@ def comment(line):
     return Parsed(line, (), (), Graph.Graph(), line, 'comment')
 
 @typecheck
-def head(line: str) -> Parsed:
+def head(line: Line) -> Parsed:
     '''gets parser by matching regex to line => head
 
     before the line is really parsed, it is checked against regular expressions (defined in `config.parsers`). whichever first matches (they are ordered), its parser is found (by string) and . it's dynamic in that a function must be found by name, but static in that everything can be checked before much code is run (just imports and `config.py`).
@@ -104,7 +105,7 @@ def head(line: str) -> Parsed:
     return parse(line)
 
 @typecheck
-def body(parsed: Parsed, body_line: str) -> Parsed:
+def body(parsed: Parsed, body_line: Line) -> Parsed:
     '''put body in context wrt head => parse
 
     create a "context" from the head and the body (given the parser that parsed the head). put the body into that context with formatting and parse it.
@@ -121,32 +122,41 @@ def body(parsed: Parsed, body_line: str) -> Parsed:
     head_line = parsed.head
     holes = context.get(head_parser, head_line, body_line)
     line = holes % escape(body_line)
+    line = Line(line, lineno=body_line.lineno, file=body_line.file)
 
     return parse(line)
 
-def attach(h, b):
-    return [h] + b
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-@strict
-def edges(h: Parsed, b: Parsed) -> [Edge]:
-    lines = attach(h, b)
+def edges(lines: [Parsed]) -> [(Line, Edge)]:
     for line in lines:
         for edge in line.graph.edges:
+            edge.line = line.line
             yield edge
 
-def note(h: str, b: str = (), as_edges=False) -> (Parsed, Parsed):
-    h = head(h)
-    b = [body(h, line) for line in b]
+def note(note: 'Note', lines=False) -> (Parsed, Parsed):
+    h = head(note.head)
+    b = [body(h, line) for line in note.body]
 
-    if as_edges: return edges(h, b)
-
+    if lines: return cons(h,b)
     return h, b
 
-def parse(text: ['Note']) -> [Parsed]:
+@typecheck
+def string(line: str) -> Parsed:
+    line = Line(line)
+    return head(line)
+
+@multimethod(str)
+def parse(text: str) -> [Parsed]:
+    notes = N.read(text)
+    return parse(notes)
+
+@multimethod(object)
+def parse(notes: '[N.Note]') -> [Parsed]:
     '''
     '''
-    for _ in notes.read(text, as_note=True):
-        head, body = note(_.head, _.body)
+    for _ in notes:
+        head, body = note(_)
 
         yield head
         yield from body

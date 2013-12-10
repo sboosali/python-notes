@@ -29,6 +29,7 @@ import db
 import reduce
 import op
 import Edge
+from Line import Line
 
 
 class Graph(tuple):
@@ -120,14 +121,17 @@ def save(*edge, collection=None):
         save_edge(edge, collection=collection)
 
 def save_edge(edge, collection=None):
-    if not collection: collection = db.collection()
-    label, *nodes = edge
+    if not isinstance(edge, Edge.Edge):
+        label, *nodes = edge
+        edge = Edge.Edge(label, nodes, line=Line())
 
-    query = {'edge': label}
-    update = {'$addToSet': {'nodes': edge}}
+    if not collection: collection = db.collection()
+
+    query = {'edge': edge.label}
+    update = {'$addToSet': {'nodes': tuple(edge)}} # nodes stored with label
     collection.update(query, update, upsert=True)
 
-    for node in nodes:
+    for node in edge.nodes:
         save_node(node, edge, collection)
 
 def save_node(node, edge=None, collection=None):

@@ -2,6 +2,7 @@ import pymongo
 
 from util import *
 import config
+import Edge
 
 
 host = config.db['mongo_host']
@@ -56,6 +57,7 @@ def graph():
 
     edges = find({'edge': {'$exists': True}})
     edges = [edge for _ in edges for edge in _['nodes']]
+    edges = [Edge.from_list(edge) for edge in edges]
 
     return nodes, edges
 

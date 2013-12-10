@@ -89,7 +89,7 @@ def main():
 
     if args.destroy:
         if args.test: h1('DESTROY')
-        print(db.collection.remove())
+        print(db.collection().remove())
 
     if args.head:
         if args.test: h1('HEAD')
@@ -104,13 +104,13 @@ def main():
         N.write_notes_to_database(notes)
 
     if args.p:
-        head, _ = parse.note(args.p)
+        head = parse.string(args.p)
         print_parse(head)
 
     if args.parse:
         print()
         for note in notes:
-            head, body = parse.note(note.head, note.body)
+            head, body = parse.note(note)
             print(head.graph.edges)
             for limb in body:
                 print(limb.graph.edges)
@@ -141,3 +141,4 @@ def main():
 
 if __name__=='__main__':
     main()
+    # callgraph(main)

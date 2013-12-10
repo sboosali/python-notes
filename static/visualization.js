@@ -83,31 +83,39 @@ function y(_, cy) { return cy;}
 
 var show = d3.select('.show').text();
 
+var selected_start = 0;
+var selected_end = 0;
+
 function verbalize (d) {
 	return d.source.name + ' ' + d.name + ' ' + d.target.name;
 }
 
+
 function enter_link (d) {
 	d3.select('.show').text(verbalize(d));
-}
-
-function enter_node (d) {
-	d3.select('.show').text(d.name);
+	select(d.lineno);
 }
 
 function leave_link() {
 	d3.select('.show').text(show);
+	unselect();
+}
+
+
+function enter_node (d) {
+	d3.select('.show').text(d.name);
 }
 
 function leave_node() {
 	d3.select('.show').text(show);
 }
 
+
 function click_link (d) {
 	show = verbalize(d);
 	d3.select('.show').text(show);
 
-	var link = d3.select(this);
+	select(d.lineno, true);
 }
 
 function click_node (d) {
@@ -236,6 +244,7 @@ function visualize(error, graph) {
 
 function Notes(notes) {
 	// getter/setter
+	// val() for <textarea> . text() for [contenteditable=true]
 	if(typeof(notes)!=='undefined') {
 		$('.notes').val(notes);
 	}
@@ -255,9 +264,55 @@ d3.select('.query').on('click', draw);
 
 //
 
-d3.xhr('notes/singers.note', function (error, response) {
-	Notes(response.responseText);
+d3.xhr('notes/dad.note', function (error, response) {
+  var text = response.responseText //.replace(/\n/g, '<br>')
+	Notes(text);
 	draw();
+
+// 	var notes = $('#notes').get(0)
+// 	var range = document.createRange();
+//   range.selectNodeContents(notes)
+
+// 	var selection = window.getSelection();
+//   selection.removeAllRanges();
+//   selection.addRange(range);
+
 });
+
+//
+
+function select(lineno, stay) {
+		var elem = $('#notes').get(0);
+		var text = Notes();
+    var lines = text.split("\n");
+
+    // start/end
+    var start = 0
+		var end = text.length;
+    for(var i = 0; i < lines.length; i++) {
+        if(i == lineno) {
+            break;
+        }
+        start += (lines[i].length+1);
+    }
+    var end = lines[lineno].length+start;
+
+    // focus and select
+		elem.focus();
+    elem.selectionStart = start;
+    elem.selectionEnd = end;
+
+	  if (stay === true) {
+			selected_start = start;
+			selected_end = end;
+		}
+}
+
+function unselect() {
+	var elem = $('#notes').get(0);
+  elem.focus();
+  elem.selectionStart = selected_start;
+  elem.selectionEnd = selected_end;
+}
 
 //TODO localstorage

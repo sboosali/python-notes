@@ -3,6 +3,7 @@ from multimethod import multimethod
 from util import *
 import op
 import config
+from Line import Line
 
 
 edges = defaultdict(lambda: default)
@@ -31,11 +32,21 @@ def get(operator, operands):
     return edge(operator, operands)
 
 class Edge(tuple):
-    def __new__(cls, label: str, nodes: [str]):
+    def __new__(cls, label: str, nodes: [str], line: Line= None):
+        if line is None: line = Line('')
+
         self = super().__new__(cls, (label,) + tuple(nodes))
+        self.__dict__ = {} #HACK for mutability so we don't need to thread the line through each parsing transformation
+
         self.label = label
         self.nodes = nodes
+        self.line = line
+
         return self
+
+def from_list(edge: iter) -> Edge:
+    label, *nodes = edge
+    return Edge(label, nodes)
 
 @edge
 def default(operator, operands):

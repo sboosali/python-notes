@@ -54,7 +54,7 @@ def get(line):
 
     '''
 
-    parsed = parse.head(line)
+    parsed = parse.string(line)
     variable_edges, constant_nodes, constant_edges = querify(parsed.graph.edges)
 
     for node in constant_nodes:

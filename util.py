@@ -6,7 +6,6 @@ import builtins
 import pprint
 import itertools
 from itertools import filterfalse
-from itertools import tee
 
 from recipes import OrderedSet
 from printing import *
@@ -45,7 +44,7 @@ def decorator(old_decorator):
 
 def odd(x): return (x%2)==1
 
-def remove_duplicates(xs):
+def remove_duplicates(xs, key=lambda _: _):
     return list(OrderedSet(xs))
 
 def has_no_duplicates(l):
@@ -242,7 +241,7 @@ def partition(predicate, iterable):
     [1, 3]
 
     '''
-    i1, i2 = tee(iterable)
+    i1, i2 = itertools.tee(iterable)
     return filter(predicate, i1), filterfalse(predicate, i2)
 
 def is_node(arc):
@@ -269,6 +268,27 @@ def filtered(f, predicate=bool):
             if predicate(_):
                 yield _
     return g
+
+def count():
+    i = 0
+    while True:
+        yield i
+        i += 1
+
+def lookahead(stream):
+    '''
+    >>> xs, ys = lookahead(range(3))
+    >>> list(xs)
+    [0, 1, 2]
+    >>> list(ys)
+    [1, 2]
+    '''
+    prevs, currs = itertools.tee(stream)
+    next(currs)
+    return prevs, currs
+
+def cons(h, b):
+    return [h] + b
 
 
 if __name__ == "__main__":
