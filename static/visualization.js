@@ -126,12 +126,12 @@ function click_node (d) {
 
 	var transition = elem.transition().duration(100);
 
-	transition
-		.attr('x', 0)
-		.attr('y', 0)
-		.attr('px', 0)
-		.attr('py', 0)
-		.attr('fisheye', {'x': 0, 'y': 0, 'z': 1});
+	// transition
+	// 	.attr('x', 0)
+	// 	.attr('y', 0)
+	// 	.attr('px', 0)
+	// 	.attr('py', 0)
+	// 	.attr('fisheye', {'x': 0, 'y': 0, 'z': 1});
 
 	d.fixed = true;
 	elem.classed("fixed", true);
@@ -316,3 +316,25 @@ function unselect() {
 }
 
 //TODO localstorage
+
+var pressed = {};
+
+$('body').on('keydown', function(e) {
+   pressed[e.keyCode] = true;
+   handleKey(e);
+});
+
+$('body').on('keyup', function(e) {
+   pressed[e.keyCode] = false;
+   handleKey(e);
+});
+
+var enter = 13;
+function handleKey(e) {
+   if (pressed[enter] && e.shiftKey) {
+      draw();
+   }
+}
+
+//
+
