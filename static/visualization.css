@@ -14,42 +14,16 @@ body {
 
 /**/
 
-.params {
-	position: absolute;
-
-	top:0%;
-	height:5%;
-
-	left:0%;
-	width:80%;
-}
-
-
-/**/
-
-svg {
-	position: absolute;
-	display: block;
-
-	top:5%;
-	height:85%;
-
-	left:0%;
-	width:80%;
-}
-
-/**/
-
 .show {
 	position: absolute;
 
-	top:90%;
+	top:0%;
 	height:10%;
 
 	left:0%;
 	width:80%;
 
-  border-top: 1px solid black;
+  border-bottom: 1px solid black;
   border-right: 1px solid black;
 
 	text-align: justify;
@@ -60,10 +34,23 @@ svg {
 
 /**/
 
+svg {
+	position: absolute;
+	display: block;
+
+	top:10%;
+	height:90%;
+
+	left:0%;
+	width:80%;
+}
+
+/**/
+
 .notes {
 	position: absolute;
 
-	top:0%;
+	top:10%;
 	height:90%;
 
 	left:80%;
@@ -75,12 +62,13 @@ svg {
 	border-left: 1px solid black;
 }
 
+
 /**/
 
 .query {
 	position: absolute;
 
-	top:90%;
+	top:0%;
 	height:10%;
 
 	left:80%;
@@ -91,7 +79,7 @@ svg {
 	vertical-align: middle;
 
 	border: 0;
-  border-top: 1px solid black;
+  border-bottom: 1px solid black;
   border-left: 1px solid black;
 }
 
@@ -128,9 +116,9 @@ div {
 
 /**/
 
-#notes {
+.notes {
 	font-family: Courier;
-	outline: none;
+/* 	outline: none; */
 	resize: none;
 	overflow: auto;
 }
@@ -142,8 +130,7 @@ div {
 	background-color: transparent;
 }
 
-
-#notes {
+.notes {
 /*	-webkit-appearance: textarea; */
 	white-space:pre
 }

@@ -1,3 +1,13 @@
+Storage.prototype.setObject = function(key, value) {
+    this.setItem(key, JSON.stringify(value));
+}
+
+Storage.prototype.getObject = function(key) {
+    var value = this.getItem(key);
+    return value && JSON.parse(value);
+}
+
+//
 
 var number_of_prints = 0;
 function print(x, n){
@@ -39,6 +49,8 @@ var fisheye = d3.fisheye.circular()
     .distortion(distortion)
 		.radius(radius);
 
+function Radius(){ return radius }
+
 //
 
 function font_size (d) {
@@ -54,30 +66,31 @@ function stroke_width (d) {
 
 //
 
-function x(_, cx) { return cx;}
-function y(_, cy) { return cy;}
+function padding() {
+	return 10;//Radius()/2;
+}
 
-// function x(self, center) {
-// 	var offset = self.getBoundingClientRect().width / 2;
-// 	return bound_x(center, offset);
-// }
+function x(self, center) {
+	var offset = self.getBoundingClientRect().width / 2;
+	return bound_x(center, offset);
+}
 
-// function y(self, center) {
-// 	var offset = self.getBoundingClientRect().height / 2;
-// 	return bound_y(center, offset);
-// }
+function y(self, center) {
+	var offset = self.getBoundingClientRect().height / 2;
+	return bound_y(center, offset);
+}
 
-// function bound_x (x, dx) {
-// 	x = Math.min(x, Width() - dx - Radius()/2);
-// 	x = Math.max(x, 0 + dx + Radius()/2);
-// 	return x;
-// }
+function bound_x (x, dx) {
+	x = Math.min(x, Width() - dx - padding());
+	x = Math.max(x, 0 + dx + padding());
+	return x;
+}
 
-// function bound_y (y, dy) {
-// 	y = Math.min(y, Height() - dy - Radius()/2);
-// 	y = Math.max(y, 0 + dy + Radius()/2)
-// 	return y;
-// }
+function bound_y (y, dy) {
+	y = Math.min(y, Height() - dy - padding());
+	y = Math.max(y, 0 + dy + padding())
+	return y;
+}
 
 //
 
@@ -193,14 +206,6 @@ function start(node, link) {
 	force.start();
 }
 
-function fix (d,i){
-	// elem[<... class=".fixed" .../>] ~> datum[d.fixed]
-	if (d.fixed){
-		var elem = d3.select(this);
-		elem.classed("fixed", true);
-	}
-}
-
 function tick(node, link) {
 	node.each(function(d) { d.fisheye = fisheye(d); })
 			.each(fix);
@@ -214,6 +219,14 @@ function tick(node, link) {
 			.attr("x2", function(d) { return x(this, d.target.fisheye.x); })
 			.attr("y2", function(d) { return y(this, d.target.fisheye.y); })
 			.style('stroke-width', stroke_width);
+}
+
+function fix (d,i){
+	// elem[<... class=".fixed" .../>] ~> datum[d.fixed]
+	if (d.fixed){
+		var elem = d3.select(this);
+		elem.classed("fixed", true);
+	}
 }
 
 //
@@ -282,7 +295,7 @@ d3.xhr('notes/dad.note', function (error, response) {
 //
 
 function select(lineno, stay) {
-		var elem = $('#notes').get(0);
+		var elem = $('.notes').get(0);
 		var text = Notes();
     var lines = text.split("\n");
 
@@ -309,7 +322,7 @@ function select(lineno, stay) {
 }
 
 function unselect() {
-	var elem = $('#notes').get(0);
+	var elem = $('.notes').get(0);
   elem.focus();
   elem.selectionStart = selected_start;
   elem.selectionEnd = selected_end;
@@ -336,5 +349,6 @@ function handleKey(e) {
    }
 }
 
-//
+//BUG $('body').bind('keydown', 'shift+enter', handleKey)
 
+//
