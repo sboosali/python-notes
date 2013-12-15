@@ -277,7 +277,7 @@ d3.select('.query').on('click', draw);
 
 //
 
-d3.xhr('notes/dad.note', function (error, response) {
+d3.xhr('notes/.note', function (error, response) {
   var text = response.responseText //.replace(/\n/g, '<br>')
 	Notes(text);
 	draw();
