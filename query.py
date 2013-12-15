@@ -2,7 +2,6 @@
 
 '''
 from util import *
-import db
 import parse
 
 
@@ -37,6 +36,7 @@ def match():
     pass
 
 def get(line):
+    import db
     '''
 
     >>> db.test()

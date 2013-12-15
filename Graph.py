@@ -25,7 +25,6 @@ edge schema
 from collections import OrderedDict
 
 from util import *
-import db
 import reduce
 import op
 import Edge
@@ -79,11 +78,12 @@ def Head(nouns: [str], verbs: [(str, [str])]) -> str:
 
     return head
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
+# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def save(*edge, collection=None):
     '''
 
+    >>> import db
     >>> db.test()
 
     # motivation: "x , y < z"
@@ -112,6 +112,7 @@ def save(*edge, collection=None):
     >>> db.untest()
 
     '''
+    import db
     if not collection: collection = db.collection()
 
     label, *nodes = edge
@@ -121,6 +122,7 @@ def save(*edge, collection=None):
         save_edge(edge, collection=collection)
 
 def save_edge(edge, collection=None):
+    import db
     if not isinstance(edge, Edge.Edge):
         label, *nodes = edge
         edge = Edge.Edge(label, nodes, line=Line())
@@ -135,6 +137,7 @@ def save_edge(edge, collection=None):
         save_node(node, edge, collection)
 
 def save_node(node, edge=None, collection=None):
+    import db
     if not collection: collection = db.collection()
 
     query = {'node': node}

@@ -1,7 +1,6 @@
 import json
 
 from util import *
-import db
 import config
 from Edge import Edge
 
@@ -66,5 +65,6 @@ if __name__ == "__main__":
     # import doctest
     # doctest.testmod()
 
+    import db
     nodes, edges = db.graph()
     pp(logic_graph_to_visual_graph(nodes, edges))
