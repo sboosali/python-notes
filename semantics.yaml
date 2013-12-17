@@ -1,8 +1,10 @@
 
-opposites:
-# or will you trip over your bootstraps into the rabbit hole of defining the properties of the semantics within the syntax itself?
-# "opposite" is a relation, naturally an edge. the edges "->" and "<-" should have the "opposites" edge between them.
-
+antisymmetric:
+# opposites
+# "opposite" is a relation, naturally an edge
+# e.g. the edges "causes" and "caused_by" share an "antisymmetric" edge
+ causes: caused_by
+ subset: superset
 
 properties:
  # with graphical interpretation
@@ -10,7 +12,7 @@ properties:
  - transitive #: in/out edge => path to/from
 
 relations:
- # nice abuse of notation with colon
+ # nice abuse of notation with colon as is_a
 
  related: symmetric
  similar: symmetric

@@ -40,9 +40,13 @@ def get_args():
     args.add_argument('--get',
                       type=str,
                       help='return the body of the head given')
+    args.add_argument('-w',
+                      type=str,
+                      default='',
+                      help='write string to database')
     args.add_argument('--write',
                       action='store_true',
-                      help='write to database')
+                      help='write file to database')
     args.add_argument('--destroy',
                       action='store_true',
                       help='destroy all documents in "notes" collection')
@@ -98,6 +102,10 @@ def main():
     if args.freqs:
         if args.test: h1('FREQS')
         print_first_token_frequencies(notes)
+
+    if args.w:
+        note, *_ = N.make_notes([('$', args.w)])
+        N.write_notes_to_database([note])
 
     if args.write:
         if args.test: h1('WRITE')

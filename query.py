@@ -35,7 +35,25 @@ def querify(edges):
 def match():
     pass
 
+def get_edges(edge):
+    label, *nodes = edge
+    hyperedge = db.find_one({'edge': label})
+
+    if hyperedge:
+        hyperedges = hyperedge['nodes']
+
+        for hyperedge in hyperedges:
+            if edge==hyperedge:
+                yield hyperedge
+
+def get_edges_from_node(node):
+    hypernode = db.find_one({'node': node})
+    if hypernode:
+        for edge in hypernode['edges']:
+            yield edge
+
 def get(line):
+    global db #HACK
     import db
     '''
 
@@ -58,21 +76,13 @@ def get(line):
     variable_edges, constant_nodes, constant_edges = querify(parsed.graph.edges)
 
     for node in constant_nodes:
-        hypernode = db.find_one({'node': node})
-        if hypernode:
-            for edge in hypernode['edges']:
-                yield edge
+        yield from get_edges_from_node(node)
 
     for edge in variable_edges:
-        label, *nodes = edge
-        hyperedge = db.find_one({'edge': label})
+        yield from get_edges(edge)
 
-        if hyperedge:
-            _edges = hyperedge['nodes']
-
-            for _edge in _edges:
-                if edge==_edge:
-                    yield _edge
+    for edge in constant_edges:
+        yield from get_edges(edge)
 
 
 if __name__ == "__main__":

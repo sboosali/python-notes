@@ -346,6 +346,8 @@ var enter = 13;
 function handleKey(e) {
    if (pressed[enter] && e.shiftKey) {
       draw();
+      e.preventDefault()
+      e.stopPropagation()
    }
 }
 
