@@ -231,7 +231,7 @@ function fix (d,i){
 
 //
 
-function visualize(error, graph) {
+function visualize(graph) {
 
 	merge(graph.nodes);
 
@@ -267,9 +267,16 @@ function Notes(notes) {
 function draw() {
 	var notes = {'notes': Notes()};
 	var request = JSON.stringify(notes);
+
 	d3.xhr("/draw").post(request, function (error, response) {
-		var graph = JSON.parse(response.responseText);
-		visualize(error, graph);
+            if (error){
+                alert();
+            }
+
+            if (response){
+	        var graph = JSON.parse(response.responseText);
+	        visualize(graph);
+            }
 	})
 }
 
@@ -346,8 +353,8 @@ var enter = 13;
 function handleKey(e) {
    if (pressed[enter] && e.shiftKey) {
       draw();
-      e.preventDefault()
-      e.stopPropagation()
+      e.preventDefault();
+      e.stopPropagation();
    }
 }
 

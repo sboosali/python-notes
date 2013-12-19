@@ -39,6 +39,12 @@ collection().create_index('edge')
 # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def find(query=None, **kwargs):
+    '''
+
+    e.g.
+    >>> nodes = db.find({'node': {'$exists': True}})
+
+    '''
     if query is None: query = {}
     fields = dict_merge({'_id': False}, kwargs.pop('fields', {}))
     return list(collection().find(query, fields=fields, **kwargs))

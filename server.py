@@ -80,4 +80,11 @@ def text_to_graph(text):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    import argparse
+    args = argparse.ArgumentParser()
+    args.add_argument('-p', '--port',
+                      type=int, default=5000,
+                      help='the port')
+    args = args.parse_args()
+
+    app.run(debug=True, port=args.port)
