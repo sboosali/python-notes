@@ -72,7 +72,7 @@ def default(line):
     ast ~ clean up and binarize the Binop subtrees
     graph ~ get edges from the parse tree
     '''
-    cst = CST(line.line)
+    cst = CST(line.text)
     ast = AST(cst)
     head, graph = Graph.Graph.harvest(ast)
     return Parsed(line, cst, ast, graph, head, 'default')

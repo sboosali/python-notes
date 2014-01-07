@@ -2,9 +2,9 @@
 '''
 
 class Line(str):
-    def __new__(cls, line: str = '', file: str = '', lineno: int = 0):
-        self = super().__new__(cls, line)
-        self.line = line
+    def __new__(cls, text: str = '', file: str = '', lineno: int = 0):
+        self = super().__new__(cls, text)
+        self.text = text
         self.file = file
         self.lineno = lineno
         return self
@@ -41,7 +41,7 @@ class Line(str):
 
     @property
     def json(self):
-        return {'line': self.line,
+        return {'text': self.text,
                 'file': self.file,
                 'lineno': self.lineno}
 

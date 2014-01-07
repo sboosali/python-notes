@@ -61,7 +61,7 @@ def logic_graph_to_visual_graph(nodes, edges) -> json:
 
 
 if __name__ == "__main__":
-    # BUG: doctest, trailing unseen char
+    #TODO doctest bug . trailing unseen char
     # import doctest
     # doctest.testmod()
 

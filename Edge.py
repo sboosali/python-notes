@@ -51,11 +51,11 @@ class Edge(tuple):
         >>> edge = Edge('subset_where', ['x','y','z'], line=line)
         >>> pp(edge.json)
         {   'label': 'subset_where',
-            'line': {'file': 'test.note', 'line': 'x < y where z', 'lineno': 1},
+            'line': {'file': 'test.note', 'text': 'x < y where z', 'lineno': 1},
             'nodes': ['x', 'y', 'z']}
 
         # identity
-        >>> data = {'label': 'like', 'nodes': ['x', 'y'], 'line': {'line': 'x ~ y', 'file': '', 'lineno': 0}}
+        >>> data = {'label': 'like', 'nodes': ['x', 'y'], 'line': {'text': 'x ~ y', 'file': '', 'lineno': 0}}
         >>> Edge(**data).json == data
         True
 

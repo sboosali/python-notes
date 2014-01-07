@@ -63,10 +63,10 @@ def API_draw_graph():
 def draw_graph(text):
     return text_to_graph(text)
 
-def line_to_edges(line):
-    edges = line.graph.edges
+def line_to_edges(parsed):
+    edges = parsed.graph.edges
     for edge in edges:
-        edge.line = line.line
+        edge.line = parsed.line
         yield edge
 
 def text_to_graph(text):
