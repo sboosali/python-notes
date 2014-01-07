@@ -43,7 +43,7 @@ from parsing import CST, AST
 import config
 import context
 import Graph
-import Edge
+from Edge import Edge
 import notes as N
 from Line import Line
 
@@ -115,7 +115,7 @@ def body(parsed: Parsed, body_line: Line) -> Parsed:
     body_parser = definition['body']
     parse = parsers[body_parser]
 
-    #HACK
+    #HACK force body comment to be parsed (not joined with head)
     if re.search(config.parsers['comment']['regex'], body_line):
         return parsers['comment'](body_line)
 

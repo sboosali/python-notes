@@ -10,7 +10,6 @@ default:
  regex: .*
  body: default
 
-
 ellipsis:
  regex: (^|\s)(\.\.\.)($|\s)
 

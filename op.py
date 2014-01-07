@@ -212,7 +212,7 @@ class Unop(Op):
         op = op + ' '*n
         return Unop(op, **self.definition)
 
-    def format(self, operand):
+    def format(self, operand, *args):
         '''
 
         >>> Unop('+').format('x')

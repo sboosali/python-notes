@@ -1,8 +1,11 @@
 '''
-
+the DB API's input
 '''
 from util import *
+import db
 import parse
+from Edge import Edge
+import store
 
 
 class Aught:
@@ -32,59 +35,60 @@ def querify(edges):
 
     return variables, constant_nodes, constant_edges
 
-def match():
-    pass
-
-def get_edges(edge):
+def from_edge(edge):
+    '''
+    take the first node, match input to each its edges
+    '''
+    edge = tuple(edge)
     label, *nodes = edge
-    hyperedge = db.find_one({'edge': label})
+    node = next(node for node in nodes if isa(node, str))
 
-    if hyperedge:
-        hyperedges = hyperedge['nodes']
+    vertex = db.find_one({'node': node})
 
-        for hyperedge in hyperedges:
-            if edge==hyperedge:
-                yield hyperedge
+    if vertex:
+        arcs = vertex['edges']
 
-def get_edges_from_node(node):
-    hypernode = db.find_one({'node': node})
-    if hypernode:
-        for edge in hypernode['edges']:
-            yield edge
+        for arc in arcs:
+            arc = Edge(**arc)
+            if arc==edge:
+                yield arc
+
+def from_node(node):
+    vertex = db.find_one({'node': node})
+    if vertex:
+        for arc in vertex['edges']:
+            arc = Edge(**arc)
+            yield arc
 
 def get(line):
-    global db #HACK
-    import db
     '''
+    generates all edges in a query, with some nodes variable,
 
-    >>> db.test()
-    >>> import Graph
-    >>> Graph.save('causes', 'piracetam', '+ ACh')
-    >>> Graph.save('causes', 'choline', '+ ACh')
+    >>> store.save('causes', 'piracetam', '+ ACh')
+    >>> store.save('causes', 'choline', '+ ACh')
 
     >>> list(get('piracetam'))
-    [['causes', 'piracetam', '+ ACh']]
+    [('causes', 'piracetam', '+ ACh')]
 
     >>> list(get('_ -> + ACh'))
-    [['causes', 'piracetam', '+ ACh'], ['causes', 'choline', '+ ACh']]
-
-    >>> db.untest()
+    [('causes', 'piracetam', '+ ACh'), ('causes', 'choline', '+ ACh')]
 
     '''
 
     parsed = parse.string(line)
     variable_edges, constant_nodes, constant_edges = querify(parsed.graph.edges)
 
-    for node in constant_nodes:
-        yield from get_edges_from_node(node)
-
     for edge in variable_edges:
-        yield from get_edges(edge)
+        yield from from_edge(edge)
 
     for edge in constant_edges:
-        yield from get_edges(edge)
+        yield from from_edge(edge)
+
+    for node in constant_nodes:
+        yield from from_node(node)
 
 
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    with db.testing():
+        import doctest
+        doctest.testmod()

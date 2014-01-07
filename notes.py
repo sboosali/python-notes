@@ -7,6 +7,7 @@ import Graph
 import query
 import syntax
 from Line import Line
+import store
 
 
 class Note:
@@ -164,11 +165,8 @@ def write(note):
     arcs = parse.edges(lines)
     nodes, edges = partition_arcs(arcs)
 
-    for node in nodes:
-        Graph.save_node(node)
-
     for edge in edges:
-        Graph.save_edge(edge)
+        store.edge(edge)
 
     return nodes, edges
 

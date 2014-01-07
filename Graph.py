@@ -27,7 +27,7 @@ from collections import OrderedDict
 from util import *
 import reduce
 import op
-import Edge
+from Edge import Edge
 from Line import Line
 
 
@@ -78,73 +78,9 @@ def Head(nouns: [str], verbs: [(str, [str])]) -> str:
 
     return head
 
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-def save(*edge, collection=None):
-    '''
-
-    >>> import db
-    >>> db.test()
-
-    # motivation: "x , y < z"
-    >>> save(',', 'x', 'y')
-    >>> pp(db.find_one({'node': 'y'}))
-    {'edges': [[',', 'x', 'y']], 'node': 'y'}
-
-    >>> save('<', 'y', 'z')
-    >>> pp(db.find_one({'node': 'y'}))
-    {'edges': [[',', 'x', 'y'], ['<', 'y', 'z']], 'node': 'y'}
-
-    >>> pp(db.find_one({'node': 'x'}))
-    {'edges': [[',', 'x', 'y']], 'node': 'x'}
-
-    >>> pp(db.find_one({'edge': ','}))
-    {'edge': ',', 'nodes': [[',', 'x', 'y']]}
-
-    >>> pp(db.find_one({'edge': '<'}))
-    {'edge': '<', 'nodes': [['<', 'y', 'z']]}
-
-    # hyperedge: "a < b where c"
-    >>> save('< where', 'a', 'b', 'c')
-    >>> pp(db.find_one({'edge': '< where'}))
-    {'edge': '< where', 'nodes': [['< where', 'a', 'b', 'c']]}
-
-    >>> db.untest()
-
-    '''
-    import db
-    if not collection: collection = db.collection()
-
-    label, *nodes = edge
-    if is_node(edge):
-        save_node(label, collection=collection)
-    else:
-        save_edge(edge, collection=collection)
-
-def save_edge(edge, collection=None):
-    import db
-    if not isinstance(edge, Edge.Edge):
-        label, *nodes = edge
-        edge = Edge.Edge(label, nodes, line=Line())
-
-    if not collection: collection = db.collection()
-
-    query = {'edge': edge.label}
-    update = {'$addToSet': {'nodes': tuple(edge)}} # nodes stored with label
-    collection.update(query, update, upsert=True)
-
-    for node in edge.nodes:
-        save_node(node, edge, collection)
-
-def save_node(node, edge=None, collection=None):
-    import db
-    if not collection: collection = db.collection()
-
-    query = {'node': node}
-    update = {'$addToSet': {'edges': edge}} if edge else {}
-    collection.update(query, update, upsert=True)
-
 
 if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
+    import db
+    with db.testing():
+        import doctest
+        doctest.testmod()

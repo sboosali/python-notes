@@ -39,6 +39,12 @@ class Line(str):
         else:
             return attr
 
+    @property
+    def json(self):
+        return {'line': self.line,
+                'file': self.file,
+                'lineno': self.lineno}
+
 
 if __name__ == "__main__":
     import doctest

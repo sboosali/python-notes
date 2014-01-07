@@ -49,9 +49,9 @@ __default__:
    spacing: 0
    reduce: join
 
- - means: less
-   arity: unary
-   reduce: prefix
+ # - means: less
+ #   arity: unary
+ #   reduce: prefix
 
 
 + :
@@ -62,9 +62,9 @@ __default__:
     - '[0-9]*?[\.\,]?[0-9]+?'
    reduce: join
 
- - means: more
-   arity: unary
-   reduce: prefix
+ # - means: more
+ #   arity: unary
+ #   reduce: prefix
 
 
 . :
@@ -200,6 +200,8 @@ src  :
  - means: exponentiate
    reduce: join
 
+for:
+ - means: for
 
 has  :
  - means: has

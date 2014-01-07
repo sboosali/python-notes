@@ -1,8 +1,10 @@
+from contextlib import contextmanager
+
 import pymongo
 
 from util import *
 import config
-import Edge
+from Edge import Edge
 
 
 host = config.db['mongo_host']
@@ -21,6 +23,12 @@ def test():
 def untest():
     collection(_test_collection).remove()
     collection(_default_collection)
+
+@contextmanager
+def testing():
+    test()
+    yield
+    untest()
 
 def collection(name :str =None) -> 'Collection':
     ''': box'''
@@ -41,8 +49,7 @@ collection().create_index('edge')
 def find(query=None, **kwargs):
     '''
 
-    e.g.
-    >>> nodes = db.find({'node': {'$exists': True}})
+    e.g. nodes = db.find({'node': {'$exists': True}})
 
     '''
     if query is None: query = {}
@@ -63,47 +70,37 @@ def graph():
 
     edges = find({'edge': {'$exists': True}})
     edges = [edge for _ in edges for edge in _['nodes']]
-    edges = [Edge.from_list(edge) for edge in edges]
+    edges = [Edge.from_iter(edge) for edge in edges]
 
     return nodes, edges
 
+@typecheck
+def put(edge: Edge):
+    '''
+    : idempotent
 
-# @typecheck
-# def get(head: str):
-#     """get a note by one of its heads from the database if it exists
-#     (exclude mongo's "_id")
-#     """
-#     select = {'head': {'$all': [head]}}
-#     exclude = {'_id':False}
-#     note = collection().find_one(select, exclude)
+    >>> put(Edge('like', ['x', 'y']))
 
-#     if note:
-#         note['head'] = head
-#     else:
-#         note = {'head': head, 'body': [], 'file': []}
-#     return note
+    >>> x_node = find_one({'node': 'x'})
+    >>> x_edges = x_node['edges']
+    >>> pp(x_edges)
+    [   {   'label': 'like',
+            'line': {'file': '', 'line': '', 'lineno': 0},
+            'nodes': ['x', 'y']}]
 
-# # @typecheck
-# # def add(heads: list, body: list, file: list = ()):
-# #     """add a note """
-# #     select = {'head': {'$all': heads}}
-# #     update = {'head': heads,
-# #               'body': body,
-# #               'file': file}
-# #     collection().update(select, update, upsert=True)
-# #     return collection().update(select, update, upsert=True, multi=True)
+    '''
+    for node in edge.nodes:
+        put_in_node(node, edge)
 
-# @typecheck
-# def put(head: str, body: list, file: str = ''):
-#     return puts([head], body, [file])
+def put_in_node(node, edge):
+    query = {'node': node}
+    update = {'$addToSet': {'edges': edge.json}}
+    collection().update(query, update, upsert=True, multi=True)
 
-# @typecheck
-# def puts(heads: list, body: list, files: list = ()):
-#     select = {'head': {'$all': heads}}
 
-#     update = {'$addToSet': {'head': {'$each': heads}}}
-#     collection().update(select, update, upsert=True, multi=True)
-
-#     update = {'$addToSet': {'file': {'$each': files}},
-#               '$pushAll': {'body': body}}
-#     collection().update(select, update, multi=True)
+if __name__ == "__main__":
+    import doctest
+    test()
+    doctest.testmod()
+#    with testing():
+#        doctest.testmod()

@@ -22,21 +22,20 @@ def edge(f):
     f = typecheck(f)
     return f
 
-def get(operator, operands):
-    '''
-    usage: `import edge; edge.get()`
-    return the generator, over which the caller iterates
-    '''
-    edge = operator.means
-    edge = edges[edge]
-    return edge(operator, operands)
-
 class Edge(tuple):
     def __new__(cls, label: str, nodes: [str], line: Line= None):
+        '''
+
+        >>> edge = Edge('like', ['x','y'])
+        >>> Edge(**edge.json) == edge
+        True
+
+        '''
         if line is None: line = Line('')
+        if isa(line, dict): line = Line(**line)
 
         self = super().__new__(cls, (label,) + tuple(nodes))
-        self.__dict__ = {} #HACK for mutability so we don't need to thread the line through each parsing transformation
+        self.__dict__ = {} #HACK for mutability, so we don't need to thread the line through each parsing transformation
 
         self.label = label
         self.nodes = nodes
@@ -44,9 +43,52 @@ class Edge(tuple):
 
         return self
 
-def from_list(edge: iter) -> Edge:
-    label, *nodes = edge
-    return Edge(label, nodes)
+    @property
+    def json(self):
+        '''
+        from Line import Line
+        >>> line = Line('x < y where z', 'test.note', 1)
+        >>> edge = Edge('subset_where', ['x','y','z'], line=line)
+        >>> pp(edge.json)
+        {   'label': 'subset_where',
+            'line': {'file': 'test.note', 'line': 'x < y where z', 'lineno': 1},
+            'nodes': ['x', 'y', 'z']}
+
+        # identity
+        >>> data = {'label': 'like', 'nodes': ['x', 'y'], 'line': {'line': 'x ~ y', 'file': '', 'lineno': 0}}
+        >>> Edge(**data).json == data
+        True
+
+        '''
+        return {'label': self.label,
+                'nodes': self.nodes,
+                'line': self.line.json}
+
+    @classmethod
+    def from_json(cls, edge):
+        '''
+
+        # identity
+        >>> edge = Edge('like', ['x', 'y'])
+        >>> Edge.from_json(edge.json) == edge
+        True
+
+        '''
+        return Edge(**edge)
+
+    @classmethod
+    def from_iter(cls, edge):
+        label, *nodes = edge
+        return Edge(label, nodes)
+
+    @classmethod
+    def get(cls, operator, operands):
+        '''
+        return the generator, over which the caller iterates
+        '''
+        edge = operator.means
+        edge = edges[edge]
+        return edge(operator, operands)
 
 @edge
 def default(operator, operands):

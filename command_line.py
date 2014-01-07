@@ -108,6 +108,7 @@ def main():
         N.write_notes_to_database([note])
 
     if args.write:
+        db.collection().remove() #HACK addToSet duplicates
         if args.test: h1('WRITE')
         N.write_notes_to_database(notes)
 
@@ -148,5 +149,5 @@ def main():
 
 
 if __name__=='__main__':
-    main()
     # callgraph(main)
+    main()
