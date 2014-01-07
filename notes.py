@@ -137,7 +137,7 @@ def make_notes(files):
     notes = []
 
     for file, chars in files:
-        blocks = read(chars)
+        blocks = read(chars, file=file)
         notes.extend(filter(bool, (notify(file, line) for line in blocks)))
 
     return notes
