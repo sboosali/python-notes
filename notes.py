@@ -151,9 +151,9 @@ def notify(file, lines):
     note = Note(head=head, body=body, file=file)
     return note
 
-def partition_arcs(arcs):
+def partition_bipartite(arcs):
     '''
-    : edges => nodes, edges
+    : n-ary edges => nodes (0-ary edges) . edges (>1-ary edges)
     '''
     _, edges = partition(is_node, arcs)
     edges = list(edges)
@@ -163,7 +163,7 @@ def partition_arcs(arcs):
 def write(note):
     lines = parse.note(note, lines=True)
     arcs = parse.edges(lines)
-    nodes, edges = partition_arcs(arcs)
+    nodes, edges = partition_bipartite(arcs)
 
     for edge in edges:
         store.edge(edge)

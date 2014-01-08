@@ -23,7 +23,7 @@ def edge(f):
     return f
 
 class Edge(tuple):
-    def __new__(cls, label: str, nodes: [str], line: Line= None):
+    def __new__(cls, label: str, nodes: [str], line: Line = None):
         '''
 
         >>> edge = Edge('like', ['x','y'])
@@ -35,7 +35,6 @@ class Edge(tuple):
         if isa(line, dict): line = Line(**line)
 
         self = super().__new__(cls, (label,) + tuple(nodes))
-        self.__dict__ = {} #HACK for mutability, so we don't need to thread the line through each parsing transformation
 
         self.label = label
         self.nodes = nodes

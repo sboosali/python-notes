@@ -1,8 +1,5 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<!--
-file:///Users/sambo/notes/static/visualization.html
--->
 <head>
 
 <link rel="stylesheet" type="text/css" href="reset.css">
@@ -21,19 +18,17 @@ file:///Users/sambo/notes/static/visualization.html
 
 <svg></svg>
 
-<div class="params">
-</div>
-
-<form>
 <!-- <div id="notes" class="notes" contenteditable></div> -->
 <textarea class="notes"></textarea>
-<table><td class="query">
-    click to parse notes and draw graph<br>
-    (or press Shift + Enter)
-    </td></table>
-</form>
 
-<div class="show" contenteditable>(hover over a node/link to see it here. click to make it stick.)</div>
+<div class="query" contenteditable>
+    _ -> + ACh
+    <!--
+    hover over a node/link to see it here. click to make it stick.<br>
+    press Shift+Enter while editing (right box) to parse and draw.<br>
+    press Shift+Enter while querying (top box) to query.<br>
+    -->
+</div>
 
 <script src="visualization.js"></script>
 

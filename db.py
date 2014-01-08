@@ -22,7 +22,6 @@ def test():
 
 def untest():
     collection(_test_collection).remove()
-    collection(_default_collection)
 
 @contextmanager
 def testing():
@@ -30,7 +29,7 @@ def testing():
     yield
     untest()
 
-def collection(name :str =None) -> 'Collection':
+def collection(name :str = None) -> 'Collection':
     ''': box'''
     global _collection
 
@@ -41,8 +40,18 @@ def collection(name :str =None) -> 'Collection':
     # getter
     return database[_collection]
 
+def new_collection() -> 'Collection':
+    name = 'server' #TODO random, ipaddr, timestamp
+    return database[name]
+
+@contextmanager
+def collection_as(new):
+    old = collection().name
+    collection(new)
+    yield
+    collection(old)
+
 collection().create_index('node')
-collection().create_index('edge')
 
 # # # # # # # # # # # # # # # # # # # # # # # # # #
 
@@ -85,7 +94,7 @@ def put(edge: Edge):
     >>> x_edges = x_node['edges']
     >>> pp(x_edges)
     [   {   'label': 'like',
-            'line': {'file': '', 'line': '', 'lineno': 0},
+            'line': {'file': '', 'text': '', 'lineno': 0},
             'nodes': ['x', 'y']}]
 
     '''

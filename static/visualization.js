@@ -94,7 +94,7 @@ function bound_y (y, dy) {
 
 //
 
-var show = d3.select('.show').text();
+var show = d3.select('.query').text();
 
 var selected_start = 0;
 var selected_end = 0;
@@ -105,28 +105,28 @@ function verbalize (d) {
 
 
 function enter_link (d) {
-	d3.select('.show').text(verbalize(d));
+	d3.select('.query').text(verbalize(d));
 	select(d.lineno);
 }
 
 function leave_link() {
-	d3.select('.show').text(show);
+	d3.select('.query').text(show);
 	unselect();
 }
 
 
 function enter_node (d) {
-	d3.select('.show').text(d.name);
+	d3.select('.query').text(d.name);
 }
 
 function leave_node() {
-	d3.select('.show').text(show);
+	d3.select('.query').text(show);
 }
 
 
 function click_link (d) {
 	show = verbalize(d);
-	d3.select('.show').text(show);
+	d3.select('.query').text(show);
 
 	select(d.lineno, true);
 }
@@ -135,7 +135,7 @@ function click_node (d) {
 	var elem = d3.select(this);
 
 	show = d.name;
-	d3.select('.show').text(show);
+	d3.select('.query').text(show);
 
 	var transition = elem.transition().duration(100);
 
@@ -274,8 +274,8 @@ function draw() {
             }
 
             if (response){
-	        var graph = JSON.parse(response.responseText);
-	        visualize(graph);
+	        		var graph = JSON.parse(response.responseText);
+	        		visualize(graph);
             }
 	})
 }
@@ -335,29 +335,79 @@ function unselect() {
   elem.selectionEnd = selected_end;
 }
 
-//TODO localstorage
+//
+
+function Query(query) {
+	// getter/setter
+	// val() for <textarea>
+  // text() for [contenteditable=true]
+	if(typeof(query)!=='undefined') {
+		$('.query').text(query);
+	}
+	return $('.query').text();
+}
+
+function query(){
+	var query = {'query': Query().trim()};
+	var request = JSON.stringify(query);
+	print(request)
+
+	d3.xhr("/query").post(request, function (error, response) {
+            if (error){
+                alert('query error');
+            }
+
+            if (response){
+	        		var data = JSON.parse(response.responseText);
+							results = data['results']
+							alert(results);
+            }
+	})
+}
+
+//
 
 var pressed = {};
+var enterKey = 13;
 
-$('body').on('keydown', function(e) {
+$('.notes').on('keydown', function(e) {
    pressed[e.keyCode] = true;
-   handleKey(e);
+   handleEdit(e);
 });
 
-$('body').on('keyup', function(e) {
+$('.notes').on('keyup', function(e) {
    pressed[e.keyCode] = false;
-   handleKey(e);
 });
 
-var enter = 13;
-function handleKey(e) {
-   if (pressed[enter] && e.shiftKey) {
-      draw();
+function handleEdit(e) {
+   if (pressed[enterKey] && e.shiftKey) {
       e.preventDefault();
       e.stopPropagation();
+      draw();
    }
 }
 
-//BUG $('body').bind('keydown', 'shift+enter', handleKey)
+$('.query').on('keydown', function(e) {
+   pressed[e.keyCode] = true;
+   handleQuery(e);
+});
+
+$('.query').on('keyup', function(e) {
+   pressed[e.keyCode] = false;
+});
+
+function handleQuery(e) {
+   if (pressed[enterKey] && e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      query();
+   }
+}
+
+//BUG $('.query').bind('keydown', 'shift+enter', submit_query)
+//BUG $('.notes').bind('keydown', 'shift+enter', submit_edit)
+
 
 //
+
+//TODO localstorage

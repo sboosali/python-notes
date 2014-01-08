@@ -60,7 +60,8 @@ def from_node(node):
             arc = Edge(**arc)
             yield arc
 
-def get(line):
+@typecheck
+def get(line: str):
     '''
     generates all edges in a query, with some nodes variable,
 

@@ -14,7 +14,7 @@ body {
 
 /**/
 
-.show {
+.query {
 	position: absolute;
 
 	top:0%;
@@ -32,8 +32,6 @@ body {
 	vertical-align: middle;
 }
 
-/**/
-
 svg {
 	position: absolute;
 	display: block;
@@ -45,12 +43,10 @@ svg {
 	width:80%;
 }
 
-/**/
-
 .notes {
 	position: absolute;
 
-	top:10%;
+	top:0%;
 	height:90%;
 
 	left:80%;
@@ -64,24 +60,6 @@ svg {
 
 
 /**/
-
-.query {
-	position: absolute;
-
-	top:0%;
-	height:10%;
-
-	left:80%;
-	width:20%;
-
-	font-size: 1.0vw;
-	text-align: center;
-	vertical-align: middle;
-
-	border: 0;
-  border-bottom: 1px solid black;
-  border-left: 1px solid black;
-}
 
 div {
 	/* BUG: why doesn't this work?? */

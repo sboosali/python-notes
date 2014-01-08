@@ -1,13 +1,14 @@
+#!/usr/bin/python3
 '''
 HTTP API
 
 (POST because of length)
 
 POST /parse
-: text => edges
 
 POST /draw
-: text => graph
+
+GET /query
 
 '''
 import flask
@@ -17,13 +18,17 @@ from util import *
 import notes as N
 import parse
 import visualization
+import query
+import db
 
 
 app = flask.Flask('Notes', static_folder='static', static_url_path='')
 
+
 @app.route('/parse', methods=['POST'])
 def API_parse_notes():
     '''
+    : text => edges
 
     $
     curl  "http://127.0.0.1:5000/parse"  -H "Content-Type:text/json"  -d '{"notes": "\n\nA2\n= x3\n: y4\n\nB6\n~ z7\n"}'
@@ -48,9 +53,11 @@ def edge_to_json(edge):
     lineno = edge.line.lineno
     return {'edge': edge, 'lineno': lineno}
 
+
 @app.route('/draw', methods=['POST'])
 def API_draw_graph():
     '''
+    : text => edges
 
     $
     curl  "http://127.0.0.1:5000/draw"  -H "Content-Type:text/json"  -d '{"notes": "\n\nA2\n= x3\n: y4\n\nB6\n~ z7\n"}'
@@ -77,6 +84,26 @@ def text_to_graph(text):
     graph = visualization.logic_graph_to_visual_graph(nodes, edges)
 
     return graph
+
+
+@app.route('/query', methods=['POST'])
+def API_query():
+    '''
+    : text => edges
+
+    $
+    curl  "http://127.0.0.1:5000/query"  -H "Content-Type:text/json"  -d '{"query": "_ -> + ACh"}'
+
+    '''
+    data = request.get_json(force=True)
+    q = data['query']
+    collection = 'notes' #TODO from cookie
+
+    with db.collection_as(collection):
+        results = list(query.get(q))
+
+    response = {'results': results}
+    return flask.jsonify(**response)
 
 
 if __name__ == "__main__":

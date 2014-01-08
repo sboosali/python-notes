@@ -81,13 +81,11 @@ def default(line):
 def ellipsis(line):
     '''doesn't parse the head, only changes how the body is parsed.
     '''
-    _ = None
     return Parsed(line, (), (), Graph.Graph(), line, 'ellipsis')
 
 @parser
 def comment(line):
     '''don't parse'''
-    _ = None
     return Parsed(line, (), (), Graph.Graph(), line, 'comment')
 
 @typecheck
@@ -129,9 +127,10 @@ def body(parsed: Parsed, body_line: Line) -> Parsed:
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
 def edges(lines: [Parsed]) -> [(Line, Edge)]:
-    for line in lines:
-        for edge in line.graph.edges:
-            edge.line = line.line
+    for _ in lines:
+        for edge in _.graph.edges:
+            # to not thread Line through each transformation
+            edge = Edge(edge.label, edge.nodes, line=_.line)
             yield edge
 
 def note(note: 'Note', lines=False) -> (Parsed, Parsed):
