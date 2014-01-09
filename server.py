@@ -66,13 +66,20 @@ def API_draw_graph():
     text = request.get_json(force=True)['notes']
     data = draw_graph(text)
 
+    # None not a collection
+    csrft = request.cookies.get('csrft')
+    if csrft not in db.database.collection_names():
+        csrft = random_string()
+
     files = [(text, '(client)')]
     notes = N.make_notes(files)
-    with db.as_collection('server'):
+    with db.as_collection(csrft):
         db.collection().remove() # drops all documents, keeps collection
         N.write_notes_to_database(notes)
+        #TODO expire collection
 
     response = flask.jsonify(**data)
+    response.set_cookie('csrft', csrft)
     return response
 
 def draw_graph(text):
@@ -105,9 +112,12 @@ def API_query():
     '''
     data = request.get_json(force=True)
     q = data['query']
-    collection = 'server' #TODO from cookie
+    csrft = request.cookies.get('csrft')
 
-    with db.as_collection(collection):
+    if not csrft:
+        return
+
+    with db.as_collection(csrft):
         results = list(query.get(q))
 
     response = {'results': results}

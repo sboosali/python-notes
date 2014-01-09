@@ -6,6 +6,7 @@ import builtins
 import pprint
 import itertools
 from itertools import filterfalse
+import random
 
 from recipes import OrderedSet
 from printing import *
@@ -289,6 +290,10 @@ def lookahead(stream):
 
 def cons(h, b):
     return [h] + b
+
+def random_string(n=64):
+    '''a random n-digit string'''
+    return ''.join(str(random.randint(0,9)) for _ in range(n))
 
 
 if __name__ == "__main__":
