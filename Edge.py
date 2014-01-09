@@ -4,6 +4,7 @@ from util import *
 import op
 import config
 from Line import Line
+import syntax
 
 
 edges = defaultdict(lambda: default)
@@ -62,6 +63,11 @@ class Edge(tuple):
         return {'label': self.label,
                 'nodes': self.nodes,
                 'line': self.line.json}
+
+    def format(self):
+        operator = syntax.symbol[self.label]
+        operands = self.nodes
+        return operator.format(*operands)
 
     @classmethod
     def from_json(cls, edge):

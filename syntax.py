@@ -21,7 +21,7 @@ for _ in complement(operators, config.operator_precedence):
     precedence.extend(operators[_])
 
 #:: {str: str}
-meaning = {operator.means: operator for operator in precedence}
+symbol = {operator.means: operator for operator in precedence}
 # maps verbs (e.g. 'causes') back to symbols (e.g. '->')
 # verbs should be unique to operators
 

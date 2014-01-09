@@ -118,7 +118,7 @@ def API_query():
         return
 
     with db.as_collection(csrft):
-        results = list(query.get(q))
+        results = list(edge.format() for edge in query.get(q))
 
     response = {'results': results}
     response = flask.jsonify(**response)

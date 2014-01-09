@@ -33,7 +33,8 @@ def logic_edge_to_visual_link(nodes, edge):
     link = {'source': nodes.index(S),
             'name': V,
             'target': nodes.index(O),
-            'lineno': edge.line.lineno}
+            'lineno': edge.line.lineno,
+            'show': edge.format()}
     return link
 
 def logic_graph_to_visual_graph(nodes, edges) -> json:

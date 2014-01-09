@@ -100,7 +100,8 @@ var selected_start = 0;
 var selected_end = 0;
 
 function verbalize (d) {
-	return d.source.name + ' ' + d.name + ' ' + d.target.name;
+	//return d.source.name + ' ' + d.name + ' ' + d.target.name;
+  return d.show;
 }
 
 
@@ -359,8 +360,9 @@ function query(){
 
             if (response){
 	        		var data = JSON.parse(response.responseText);
-							results = data['results']
-							alert(results);
+							var results = data['results']
+              results = results.join('\n')
+              d3.select('.results').text(results)
             }
 	})
 }

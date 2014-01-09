@@ -185,7 +185,7 @@ def get(line):
         label, *nodes = result
 
         if label:
-            operator = syntax.meaning[label]
+            operator = syntax.symbol[label]
             edge = operator.format(*nodes)
             yield edge
         else:

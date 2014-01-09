@@ -40,8 +40,7 @@ def collection(name :str = None) -> 'Collection':
     # getter
     return database[_collection]
 
-#TODO ipaddr, timestamp, user-agent, browser
-# new_collection_name
+#TODO new_collection_name with ipaddr, timestamp, user-agent, browser
 
 @contextmanager
 def as_collection(new):
