@@ -136,7 +136,7 @@ def read(text: str, file='') -> [Note]:
 def make_notes(files):
     notes = []
 
-    for file, chars in files:
+    for chars, file in files:
         blocks = read(chars, file=file)
         notes.extend(filter(bool, (notify(file, line) for line in blocks)))
 

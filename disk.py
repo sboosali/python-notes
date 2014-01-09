@@ -14,4 +14,4 @@ def make_files(files):
 def read_files(files):
     files = make_files(files)
     for file in files:
-        yield file, open(file).read()
+        yield open(file).read(), file

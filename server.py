@@ -64,8 +64,16 @@ def API_draw_graph():
 
     '''
     text = request.get_json(force=True)['notes']
-    response = draw_graph(text)
-    return flask.jsonify(**response)
+    data = draw_graph(text)
+
+    files = [(text, '(client)')]
+    notes = N.make_notes(files)
+    with db.as_collection('server'):
+        db.collection().remove() # drops all documents, keeps collection
+        N.write_notes_to_database(notes)
+
+    response = flask.jsonify(**data)
+    return response
 
 def draw_graph(text):
     return text_to_graph(text)
@@ -97,13 +105,14 @@ def API_query():
     '''
     data = request.get_json(force=True)
     q = data['query']
-    collection = 'notes' #TODO from cookie
+    collection = 'server' #TODO from cookie
 
-    with db.collection_as(collection):
+    with db.as_collection(collection):
         results = list(query.get(q))
 
     response = {'results': results}
-    return flask.jsonify(**response)
+    response = flask.jsonify(**response)
+    return response
 
 
 if __name__ == "__main__":

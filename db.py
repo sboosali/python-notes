@@ -40,12 +40,8 @@ def collection(name :str = None) -> 'Collection':
     # getter
     return database[_collection]
 
-def new_collection() -> 'Collection':
-    name = 'server' #TODO random, ipaddr, timestamp
-    return database[name]
-
 @contextmanager
-def collection_as(new):
+def as_collection(new):
     old = collection().name
     collection(new)
     yield

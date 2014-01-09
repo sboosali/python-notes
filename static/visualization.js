@@ -270,7 +270,7 @@ function draw() {
 
 	d3.xhr("/draw").post(request, function (error, response) {
             if (error){
-                alert();
+                alert('parsing error');
             }
 
             if (response){
@@ -354,7 +354,7 @@ function query(){
 
 	d3.xhr("/query").post(request, function (error, response) {
             if (error){
-                alert('query error');
+                alert('querying error');
             }
 
             if (response){
