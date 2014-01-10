@@ -49,11 +49,11 @@ svg {
 	top:0%;
 	height:100%;
 
-	left:80%;
+	left:0%;
 	width:20%;
 
 	border: 0;
-	border-left: 1px solid black;
+  border-right: 1px solid black;
 }
 
 .results {
@@ -62,11 +62,11 @@ svg {
 	top:0%;
 	height:100%;
 
-	left:0%;
+	left:80%;
 	width:20%;
 
-	border: 0;
-  border-right: 1px solid black;
+  border: 0;
+	border-left: 1px solid black;
 }
 
 .notes .results {
