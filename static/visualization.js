@@ -371,6 +371,7 @@ function query(){
 
 var pressed = {};
 var enterKey = 13;
+var tabKey = 9;
 
 $('.notes').on('keydown', function(e) {
    pressed[e.keyCode] = true;
@@ -406,10 +407,18 @@ function handleQuery(e) {
    }
 }
 
-//BUG $('.query').bind('keydown', 'shift+enter', submit_query)
-//BUG $('.notes').bind('keydown', 'shift+enter', submit_edit)
-
-
 //
 
+// for cyclic tabbing
+$('[tabindex=3]').on('keydown', function(e) {
+  if (e.keyCode===tabKey) {
+    e.preventDefault();
+    e.stopPropagation();
+    $('[tabindex=1]').focus();
+  }
+})
+
+//
+//BUG $('.query').bind('keydown', 'shift+enter', submit_query)
+//BUG $('.notes').bind('keydown', 'shift+enter', submit_edit)
 //TODO localstorage
