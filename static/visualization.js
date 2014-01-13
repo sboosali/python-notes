@@ -20,6 +20,7 @@ function print(x, n){
 	}
 }
 
+
 //
 
 var svg = d3.select("svg")
@@ -106,28 +107,29 @@ function verbalize (d) {
 
 
 function enter_link (d) {
-	d3.select('.query').text(verbalize(d));
+	Query(verbalize(d));
 	select(d.lineno);
 }
 
 function leave_link() {
-	d3.select('.query').text(show);
+	Query(show);
 	unselect();
 }
 
 
 function enter_node (d) {
-	d3.select('.query').text(d.name);
+	Query(d.name);
 }
 
 function leave_node() {
-	d3.select('.query').text(show);
+	Query(show);
 }
 
 
 function click_link (d) {
 	show = verbalize(d);
-	d3.select('.query').text(show);
+	Query(show);
+  query();
 
 	select(d.lineno, true);
 }
@@ -136,7 +138,8 @@ function click_node (d) {
 	var elem = d3.select(this);
 
 	show = d.name;
-	d3.select('.query').text(show);
+	Query(show);
+  query();
 
 	var transition = elem.transition().duration(100);
 
@@ -343,9 +346,9 @@ function Query(query) {
 	// val() for <textarea>
   // text() for [contenteditable=true]
 	if(typeof(query)!=='undefined') {
-		$('.query').text(query);
+		$('.query').val(query);
 	}
-	return $('.query').text();
+	return $('.query').val();
 }
 
 function query(){
