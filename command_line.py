@@ -7,6 +7,7 @@ import notes as N
 import db
 import visualization
 import disk
+import nlp
 
 
 def get_args():
@@ -58,11 +59,15 @@ def get_args():
     args.add_argument('-p',
                       type=str,
                       default='',
-                      help='takes a string and parses it')
+                      help='takes a (NOTES syntax) string and parses it')
     args.add_argument('--parse',
                       type=str,
                       default='',
                       help='takes a file and parses it')
+    args.add_argument('--english',
+                      type=str,
+                      default='',
+                      help='takes a (natural language) string and parses it')
 
     args.add_argument('files',
                       nargs='*',
@@ -90,6 +95,11 @@ def main():
 
     files = disk.read_files(args.files)
     notes = N.make_notes(files)
+
+    if args.english:
+        line = args.english
+        tree = nlp.parse(line)
+        nlp.show(line, tree)
 
     if args.destroy:
         if args.test: h1('DESTROY')
