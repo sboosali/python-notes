@@ -1,13 +1,4 @@
-Storage.prototype.setObject = function(key, value) {
-    this.setItem(key, JSON.stringify(value));
-}
-
-Storage.prototype.getObject = function(key) {
-    var value = this.getItem(key);
-    return value && JSON.parse(value);
-}
-
-//
+// Util
 
 var number_of_prints = 0;
 function print(x, n){
@@ -20,8 +11,7 @@ function print(x, n){
 	}
 }
 
-
-//
+// the Graph
 
 var svg = d3.select("svg")
 
@@ -33,8 +23,6 @@ function Height(){
 }
 var width = Width();
 var height = Height();
-
-//
 
 var force = d3.layout.force()
     .charge(-2000)
@@ -50,9 +38,7 @@ var fisheye = d3.fisheye.circular()
     .distortion(distortion)
 		.radius(radius);
 
-function Radius(){ return radius }
-
-//
+//D3 flows
 
 function font_size (d) {
     return d.fisheye.z * 30
@@ -65,7 +51,29 @@ function stroke_width (d) {
     return z * 10;
 }
 
-//
+// DOM getters/setters
+
+function Radius(){ return radius }
+
+function Notes(notes) {
+	// getter/setter
+	// val() for <textarea> . text() for [contenteditable=true]
+	if(typeof(notes)!=='undefined') {
+		$('.notes').val(notes);
+	}
+	return $('.notes').val();
+}
+function Query(query) {
+	// getter/setter
+	// val() for <textarea>
+  // text() for [contenteditable=true]
+	if(typeof(query)!=='undefined') {
+		$('.query').val(query);
+	}
+	return $('.query').val();
+}
+
+// Bound Box
 
 function padding() {
 	return 10;//Radius()/2;
@@ -93,7 +101,7 @@ function bound_y (y, dy) {
 	return y;
 }
 
-//
+// Hover/Click on Graph
 
 var show = d3.select('.query').text();
 
@@ -104,7 +112,6 @@ function verbalize (d) {
 	//return d.source.name + ' ' + d.name + ' ' + d.target.name;
   return d.show;
 }
-
 
 function enter_link (d) {
 	Query(verbalize(d));
@@ -143,18 +150,19 @@ function click_node (d) {
 
 	var transition = elem.transition().duration(100);
 
-	// transition
-	// 	.attr('x', 0)
-	// 	.attr('y', 0)
-	// 	.attr('px', 0)
-	// 	.attr('py', 0)
-	// 	.attr('fisheye', {'x': 0, 'y': 0, 'z': 1});
-
 	d.fixed = true;
 	elem.classed("fixed", true);
 }
 
-//
+function fix (d,i){
+	// elem[<... class=".fixed" .../>] ~> datum[d.fixed]
+	if (d.fixed){
+		var elem = d3.select(this);
+		elem.classed("fixed", true);
+	}
+}
+
+// Update Graph
 
 var names = {};
 // stores old nodes
@@ -183,7 +191,7 @@ function link_id (d){
 	return id;
 }
 
-//
+// D3 loop
 
 function start(node, link) {
 	link.enter().append("line");
@@ -225,15 +233,7 @@ function tick(node, link) {
 			.style('stroke-width', stroke_width);
 }
 
-function fix (d,i){
-	// elem[<... class=".fixed" .../>] ~> datum[d.fixed]
-	if (d.fixed){
-		var elem = d3.select(this);
-		elem.classed("fixed", true);
-	}
-}
-
-//
+// Editing Notes
 
 function visualize(graph) {
 
@@ -257,17 +257,6 @@ function visualize(graph) {
 
 };
 
-//
-
-function Notes(notes) {
-	// getter/setter
-	// val() for <textarea> . text() for [contenteditable=true]
-	if(typeof(notes)!=='undefined') {
-		$('.notes').val(notes);
-	}
-	return $('.notes').val();
-}
-
 function draw() {
 	var notes = {'notes': Notes()};
 	var request = JSON.stringify(notes);
@@ -284,26 +273,7 @@ function draw() {
 	})
 }
 
-d3.select('.query').on('click', draw);
-
-//
-
-d3.xhr('notes/.note', function (error, response) {
-  var text = response.responseText //.replace(/\n/g, '<br>')
-	Notes(text);
-	draw();
-
-// 	var notes = $('#notes').get(0)
-// 	var range = document.createRange();
-//   range.selectNodeContents(notes)
-
-// 	var selection = window.getSelection();
-//   selection.removeAllRanges();
-//   selection.addRange(range);
-
-});
-
-//
+// Select Text
 
 function select(lineno, stay) {
 		var elem = $('.notes').get(0);
@@ -339,17 +309,7 @@ function unselect() {
   elem.selectionEnd = selected_end;
 }
 
-//
-
-function Query(query) {
-	// getter/setter
-	// val() for <textarea>
-  // text() for [contenteditable=true]
-	if(typeof(query)!=='undefined') {
-		$('.query').val(query);
-	}
-	return $('.query').val();
-}
+// Querying
 
 function query(){
 	var query = {'query': Query().trim()};
@@ -370,7 +330,12 @@ function query(){
 	})
 }
 
-//
+d3.select('.query').on('focus', draw);
+// forces redraw to make what you see consistent with the results
+
+d3.select('.query').on('blur', query);
+
+// Keyboard Shortcuts
 
 var pressed = {};
 var enterKey = 13;
@@ -410,10 +375,9 @@ function handleQuery(e) {
    }
 }
 
-//
+// Cyclic Tabbing
 
-// for cyclic tabbing
-$('[tabindex=3]').on('keydown', function(e) {
+$('[tabindex=2]').on('keydown', function(e) {
   if (e.keyCode===tabKey) {
     e.preventDefault();
     e.stopPropagation();
@@ -421,7 +385,3 @@ $('[tabindex=3]').on('keydown', function(e) {
   }
 })
 
-//
-//BUG $('.query').bind('keydown', 'shift+enter', submit_query)
-//BUG $('.notes').bind('keydown', 'shift+enter', submit_edit)
-//TODO localstorage
