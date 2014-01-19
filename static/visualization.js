@@ -1,14 +1,15 @@
 // Util
 
-var number_of_prints = 0;
-function print(x, n){
-	if(typeof(n)==='undefined') {
-			console.log(x);
-	}
-  else if (number_of_prints < n) {
-		number_of_prints++;
-		console.log(x);
-	}
+function print(a,b,c,d,e,f,g){
+  out = [];
+  if (a) { out.push(a); }
+  if (b) { out.push(b); }
+  if (c) { out.push(c); }
+  if (d) { out.push(d); }
+  if (e) { out.push(e); }
+  if (f) { out.push(f); }
+  if (g) { out.push(g); }
+  console.log(out.join(' '));
 }
 
 // the Graph
@@ -258,8 +259,11 @@ function visualize(graph) {
 };
 
 function draw() {
-	var notes = {'notes': Notes()};
-	var request = JSON.stringify(notes);
+	var notes = Notes()
+  if (!notes) {return;};
+
+	var request = JSON.stringify({'notes': notes});
+  print(request)
 
 	d3.xhr("/draw").post(request, function (error, response) {
             if (error){
@@ -312,8 +316,10 @@ function unselect() {
 // Querying
 
 function query(){
-	var query = {'query': Query().trim()};
-	var request = JSON.stringify(query);
+  var query = Query().trim();
+  if (!query) {return;}
+
+	var request = JSON.stringify({'query': query});
 	print(request)
 
 	d3.xhr("/query").post(request, function (error, response) {
@@ -385,3 +391,29 @@ $('[tabindex=2]').on('keydown', function(e) {
   }
 })
 
+// Persistence
+
+var Storage = {
+
+  set: function(key, value) {
+    localStorage.setItem(key, JSON.stringify(value));
+  },
+
+  get: function(key) {
+    var value = localStorage.getItem(key);
+    return value && JSON.parse(value);
+  }
+}
+
+function persist() {
+  Storage.set('notes', Notes());
+}
+
+$(window).on('unload', persist)
+
+function restore() {
+  Notes(Storage.get('notes'));
+  print('(restoring)', Storage.get('notes'));
+}
+
+$(restore);
